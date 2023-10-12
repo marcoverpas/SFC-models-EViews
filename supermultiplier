@@ -8,8 +8,8 @@
 '  in a Stock-Flow Consistent Dynamic Model", Review of Political Economy. The code is available for the
 '  public. If you use it for publication purposes, please mention the source. 
 '
-'  Instructions: dowload the EViews program file and the associated Excel file. Change the path after the
-'  "read" command (line 29). Run the model. 
+'  Instructions: a) dowload this EViews program file and the associated Excel file, named "data_ref.xls";  
+'  b) change the path after the "read" command (line 29); c) run the model. 
 '
 '  *****************************************************************************************************************************************************
 
