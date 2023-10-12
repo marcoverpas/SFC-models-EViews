@@ -1,0 +1,2465 @@
+'  *****************************************************************************************************************************************************
+'  SUPER-MULTIPLIER-ECOLOGICAL MODEL, No. 74                                                                               
+'
+'  -- Web version --
+'
+'  Note: this EViews program file reproduces the experiments discussed in: Carnevali E., Deleidi M.,
+'  Pariboni R., and Veronese Passarella M. (2023) " Economy-Finance-Environment-Society Interconnections
+'  in a Stock-Flow Consistent Dynamic Model", Review of Political Economy. The code is available for the
+'  public. If you use it for publication purposes, please mention the source. 
+'
+'  Instructions: dowload the EViews program file and the associated Excel file. Change the path after the
+'  "read" command (line 29). Run the model. 
+'
+'  *****************************************************************************************************************************************************
+
+'  Last update: 12 October 2023 
+
+'  *****************************************************************************************************************************************************
+
+'Create workfile: annual data (named 'superecom72') 
+
+wfcreate(wf = superecom74) a 1960 2100
+
+'  *****************************************************************************************************************************************************
+
+'Select saving type:
+series saving = 1     '1 = save charts and tables; 0 = do not save charts and tables 
+
+'Import observed series
+read(b15) "C:\Users\ ... \data_ref.xls" y_bil cons_bil inv_bil ny_bil v_bil tau_ob kappa_ob gov_bil p_100 lf_bil   
+
+'  *****************************************************************************************************************************************************
+
+'Adjust unit of measure and calculate additional macroeconomic series
+series y_ob=y_bil/1000000000000 'Net output (real)
+series ny_ob=ny_bil/1000000000000 'Net output (nominal)
+series cons_ob=cons_bil/1000000000000 'Consumption (real)
+series inv_ob=inv_bil/1000000000000 'Total investment (real)
+series gov_ob=gov_bil/1000000000000 'Total goverment spending (real)
+series gy_ob = inv_ob+cons_ob+gov_ob 'Gross output (real)
+series cint_ob = gy_ob-y_ob 'Intermediate consumption (real)
+series k_ob = y_ob*kappa_ob/100 'Capital stock (real, my calculations)
+series delta_ob = @recode(@date<@dateval("1961"),0.079,(inv_ob - d(k_ob))/k_ob(-1)) 'Capital depreciation rate (my calculations)
+series yd_ob = y_ob*(1-(tau_ob/100)) 'Total disposable income (real, my calculations)
+series nw_ob = @recode(@date<@dateval("1961"),0,nw_ob(-1) + yd_ob - cons_ob) 'Net wealth (real, my calculations)
+series p_ob = p_100/100 'Net output deflator
+series h_ob = inv_ob/y_ob(-1) ' Share of investment to total output
+series u_ob = @recode(@date<@dateval("1961"),0.5,u_ob(-1) + u_ob(-1)*(dlog(y_ob) - dlog(k_ob))) 'Utilisation rate
+series tax_ob = y_ob*tau_ob/100 'Tax revenue 
+series lf_ob = lf_bil/1000000000 'Labour force
+series wb_ob = 0.65*y_ob  'Employees compensations (real, my calculations)
+series yd_w_ob = wb_ob*(1-(tau_ob/100)) 'Total disposable income of LC households (real, my calculations)
+
+
+'  *****************************************************************************************************************************************************
+
+'Create and label variables & parameters
+
+series dc
+dc.label(d) Stock of durable goods
+series zeta
+zeta.label(d) Portion of durable goods discarded every year
+series parw
+parw.label(d) Productivity increase captured by wage rate
+series ineq_y
+ineq_y.label(d) Income inequality
+series ineq_v
+ineq_v.label(d) Wealth inequality
+series gov_stab
+gov_stab.label(d) Automatic stabilisers  
+series perc_gov_stab
+perc_gov_stab.label(d) Parameter defining automatic stabilisers  
+series perc_cons_w
+perc_cons_w.label(d) Percentage of LC households consumption to total consumption (initial value)
+series perc_gov_rout
+perc_gov_rout.label(d) Percentage of routine spending to total spending (initial value)
+series y
+y.label(d) Aggregate demand (nominal output)
+series cons
+cons.label(d) Total consumption
+series cint
+cint.label(d) Intermediate consumption
+series cons_w
+cons_w.label(d) LC households consumption
+series cons_p
+cons_w.label(d) UC households consumption
+series c_w
+c_w.label(d) LC households propensity to consume out of income (gap)
+series c_aw
+c_aw.label(d) LC households propensity to consume out of wealth (gap)
+series c_p
+c_p.label(d) UC households propensity to consume out of income (gap)
+series c_ap
+c_ap.label(d) UC households propensity to consume out of wealth (gap)
+series i_c
+i_c.label(d) Gross investment
+series gov
+gov.label(d) Total government expenditure
+series gov_rout
+gov_rout.label(d) Routine government expenditure
+series g_gv_rout
+g_gv_rout.label(d) Routine government expenditure growth rate
+series gov_mois
+gov_mois.label(d) Government MOIS
+series yd_w
+yd_w.label(d) Disposable income of LC households
+series nw_w
+nw_w.label(d) Net wealth of LC households
+series yd_p
+yd_p.label(d) Disposable income of UC households
+series yd_p_hs
+yd_p_hs.label(d) Haig-Simons disposable income of UC households
+series yd
+yd.label(d) Total disposable income
+series nw_p
+nw_p.label(d) Net wealth of UC households
+series nw
+nw.label(d) Total net wealth of households
+series k_f
+k_f.label(d) Total stock of capital
+series k_c
+k_c.label(d) Stock of conventional capital
+series k_gr
+k_gr.label(d) Stock of green capital
+series g_k
+g_k.label(d) Accumulation rate of capital
+series g_y
+g_y.label(d) Rate of growth of output
+series g_x
+g_x.label(d) Rate of growth of real output
+series g_y0
+g_y0.label(d) Output growth shock
+series g_gv_mois
+g_gv_mois.label(d) Rate of growth of MOIS government spending
+series g_gv_mois_dec
+g_gv_mois_dec.label(d) Deceleration in MOIS government spending
+series g_be 
+g_be.label(d) Rate of growth of private innovation
+series g_be0                                              
+g_be0.label(d) Innovation spending growth shock
+series h
+h.label(d) Investment share to output
+series u
+u.label(d) Utilisation rate (actual)
+series u_m
+u_m.label(d) Matter utilisation rate
+series u_e
+u_e.label(d) Energy utilisation rate
+series e_rate
+e_rate.label(d) Labour utilisation rate (rate of employment)
+series delta0_c
+delta0_c.label(d) Parameter in conventional capital depreciation rate function
+series delta0_gr
+delta0_gr.label(d) Parameter in green capital depreciation rate function
+series adk_c
+adk_c.label(d) Parameter in conventional capital depreciation rate function
+series adk_gr
+adk_gr.label(d) Parameter in conventional capital depreciation rate function
+series delta_c
+delta_c.label(d) Convetional capital depreciation rate
+series delta_gr
+delta_gr.label(d) Green capital depreciation rate
+series phi
+phi.label(d) Sensitivity of investment share to utilisation rate gap  
+series u_n 
+u_n.label(d) Natural utilisation rate of capital 
+series be
+be.label(d) Business R&D expenditure
+series be_a
+be_a.label(d) Autonomous component of R&D expenditure
+series gamma0_gr
+gamma0_gr.label(d) Initial value of private green investment share
+series gamma1_gr
+gamma1_gr.label(d) Autoregressive component of green investment share 
+series gamma2_gr
+gamma2_gr.label(d) Sensitivity of green investment share to government spending share
+series gamma3_gr
+gamma3_gr.label(d) Sensitivity of green investment share to environmental damages
+series gamma_tech
+gamma_tech.label(d) Non-green private innovation expenditure to government spending ratio
+series omega
+omega.label(d) Wage share to total output
+series tax_f
+tax_f.label(d) Taxes on firms (carbon tax) 
+series tax_w
+tax_w.label(d) Taxes on LC households income
+series tax_p
+tax_p.label(d) Taxes on UC households income
+series tau_f
+tau_f.label(d) Carbon tax rate (USD per Gt of industrial emissions) 
+series tau_w
+tau_w.label(d) Tax rate on LC households income
+series tax_res
+tax_res.label(d) Additional taxes to balance goverment budget
+series tau_p
+tau_p.label(d) Tax rate on UC households income
+series tax
+tax.label(d) Total tax revenue
+series e_s 
+e_s.label(d) Real stock of shares
+series chi
+chi.label(d) Target percentage of investment to be funded by share issues 
+series p_e
+p_e.label(d) Unit price of shares
+series ee_d
+ee_d.label(d) Nominal equity & shares held by households
+series e_d
+e_d.label(d) Real equity & shares held by households
+series lambda10
+lambda10.label(d) UC households equity portfolio parameter 0
+series lambda11
+lambda11.label(d) UC households equity portfolio parameter 1
+series lambda12
+lambda12.label(d) UC households equity portfolio parameter 2
+series lambda13
+lambda13.label(d) UC households equity portfolio parameter 3
+series lambda14
+lambda14.label(d) UC households equity portfolio parameter 4
+series lambda20
+lambda20.label(d) UC householdsT-bills portfolio parameter 0
+series lambda21
+lambda21.label(d) UC householdsT-bills portfolio parameter 1
+series lambda22
+lambda22.label(d) UC householdsT-bills portfolio parameter 2
+series lambda23
+lambda23.label(d) UC householdsT-bills portfolio parameter 3
+series lambda24
+lambda24.label(d) UC householdsT-bills portfolio parameter 4
+series lambda30
+lambda30.label(d) UC households deposits portfolio parameter 0
+series lambda31
+lambda31.label(d) UC households cash portfolio parameter 1
+series lambda32
+lambda32.label(d) UC households cash portfolio parameter 2
+series lambda33
+lambda33.label(d) UC households cash portfolio parameter 3
+series lambda34
+lambda34.label(d) UC households cash portfolio parameter 4
+series lambda_w
+lambda_w.label(d) Cash to wealth ratio of LC households
+series r_e
+r_e.label(d) % of capital gains/losses on equity and shares
+series l_f
+l_f.label(d) Firms demand for loans
+series l_w
+l_w.label(d) Demand for personal loans
+series rep
+rep.label(d) Repayment rate of LC households loans
+series bur
+bur.label(d) Households debt burden
+series psi
+psi.label(d) Personal loans to total consumption
+series l_d
+l_d.label(d) Total demand for loans
+series l_s
+l_s.label(d) Supply of bank loans
+series da_f
+da_f.label(d) Total depreciation allowances
+series da_c
+da_c.label(d) Conventional capital depreciation
+series da_gr
+da_gr.label(d) Green capital depreciation
+series d_d
+d_d.label(d) Total demand for bank deposits
+series d_w
+d_w.label(d) Deposits held by LC households
+series d_p
+d_p.label(d) Deposits held by UC households
+series d_row
+d_row.label(d) Deposits held by RoW
+series d_s
+d_s.label(d) Supply of bank deposits
+series r_d
+r_d.label(d) Rate of interest on bank deposits
+series r_l
+r_l.label(d) Rate of interest on loans 
+series r_cb
+r_cb.label(d) Central bank target interest rate
+series r_mu_l
+r_mu_l.label(d) Mark-up over central bank rate 
+series r_mu_b
+r_mu_b.label(d) T-bills risk premium 
+series r_mu_b0
+r_mu_b0.label(d) Initial value of risk premium
+series r_mu_b1
+r_mu_b1.label(d) Sensitivity of T-bills risk premium to climate-related damages
+series param
+param.label(d) Percentage of financial incomes (different from dividends) to working-class households
+series gdef
+gdef.label(d) Government deficit
+series gdeb
+gdeb.label(d) Government debt
+series rowdef
+rowdef.label(d) Foreign sector deficit
+series rowdeb
+rowdeb.label(d) Foreign sector debt
+series b_d
+b_d.label(d) Nominal demand for treasury bills
+series p_b
+p_b.label(d) Price of treasury bills
+series b_s
+b_s.label(d) Real supply of treasury bills
+series b_cb
+b_cb.label(d) Treasury bills purchased by CB
+series H_s
+H_s.label(d) Cash created by CB
+series H_d
+H_d.label(d) Cash demanded by households
+series H_w
+H_w.label(d) Cash held by LC households
+series H_p
+H_p.label(d) Cash held by UC households
+series r_b
+r_b.label(d) Interest rate on treasury bills
+series cg
+cg.label(d) Capital gains/losses on shares
+series q
+q.label(d) Tobin q
+series pe
+pe.label(d) Price-earnings ratio
+series lev
+lev.label(d) Leverage ratio of firms
+series f_f
+f_f.label(d) Firms profits
+series f_fu
+f_fu.label(d) Retained profits of firms
+series f_fd
+f_fd.label(d) Distributed profits of firms (dividends)
+series theta
+theta.label(d) Firms profit retention rate
+series f_b
+f_b.label(d) Banks profit
+series wb
+wb.label(d) Wage bill
+series w
+w.label(d) Hourly wage rate
+series alpha
+alpha.label(d) Percentage of MOIS devoted to green innovation
+series gov_gr
+gov_gr.label(d) Value of MOIS devoted to green innovation
+series gov_tech
+gov_tech.label(d) Value of MOIS not devoted to green innovation
+series i_gr
+i_gr.label(d) Green investment
+series i_gr_share
+i_gr_share.label(d) Green investment share: initial value
+series be
+be.label(d) Value of private R&S not devoted to green innovation
+series z_gr
+z_gr.label(d) Total green expenditure 
+series g_gr
+g_gr.label(d) Total green expenditure growth rate
+series z_tech
+z_tech.label(d) Total non-green innovation expenditure
+series v
+v.label(d) Desired capital stock to output ratio
+series y_f
+y_f.label(d) Real capital-determined potential output
+series a_f
+a_f.label(d) Real product per unit of capital
+series g_f
+g_f.label(d) Growth rate of real product per unit of capital
+series g_f0
+g_f0.label(d) Baseline value of growth rate of real product per unit of capital
+series g_f1
+g_f1.label(d) Sensitivity of growth rate of capital productivity to innovative spending
+series y_gr 
+y_gr.label(d) Real natural resources-determined potential output
+series a_gr
+a_gr.label(d) Real product per unit of natural capital
+series y_leontief
+y_leontief.label(d) Real potential output
+series y_leontief_eco
+y_leontief_eco.label(d) Real potential output - ecological constraints only
+series y_leontief_tec
+y_leontief_tec.label(d) Real potential output  - economic constraints only
+series p_y
+p_y.label(d) Price of output 
+series mk
+mk.label(d) Mark-up over labour cost 
+series mk0
+mk0.label(d) Coefficient of mark-up function 
+series mk1
+mk1.label(d) Coefficient of mark-up function
+series p
+p.label(d) General price level 
+series pi
+pi.label(d) Adjustment coefficient of price expectations 
+series p1
+p1.label(d) Sensitivity of price level to output gap 
+series p2
+p2.label(d) Sensitivity of price level to price of energy 
+series p3
+p3.label(d) Sensitivity of price level to price of matter
+series ny
+ny.label(d) Nominal output at current prices
+series i_f
+i_f.label(d) Total private investment (excluding non-k innovation spending)
+series inv
+inv.label(d) Total private investment (including non-k innovation spending)
+series y_mat 
+y_mat.label(d) Production of material goods
+series mu
+mu.label(d) Matter intensity coefficient
+series mat
+mat.label(d) Extraction of matter
+series rec
+rec.label(d) Recycled socio-economic stock
+series rho_rec
+rho_rec.label(d) Recycling rate
+series des
+des.label(d) Destruction of socio-economic stock
+series k_se
+k_se.label(d) Socio-economic stock
+series wa
+wa.label(d) Waste generated by production activities
+series k_m
+k_m.label(d) Stock of material reserves
+series conv_m
+conv_m.label(d) Material resources converted to reserves
+series sigma_m
+sigma_m.label(d) Matter conversion rate
+series sigma_m0
+sigma_m0.label(d) Autonomous component in matter conversion rate
+series sigma_m1
+sigma_m1.label(d) Sensitivity of matter conversion rate to energy price 
+series res_m
+res_m.label(d) Stock of material resources
+series e
+e.label(d) Energy required for production
+series en
+en.label(d) Non-renewable energy
+series er
+er.label(d) Renewable energy
+series eta_e
+eta_e.label(d) Share of renewable energy
+series eta_e_gr
+eta_e_gr.label(d) Share of renewable energy of green activities
+series eta_e_c
+eta_e_c.label(d) Share of renewable energy of conventional activities
+series epsilon
+epsilon.label(d) Energy intensity coefficient
+series ed
+ed.label(d) Dissipated energy at the end of the period
+series k_e
+k_e.label(d) Stock of energy reserves
+series conv_e
+conv_e.label(d) Energy resources converted to reserves
+series sigma_e
+sigma_e.label(d) Energy conversion rate
+series sigma_e0
+sigma_e0.label(d) Autonomous component in energy conversion rate
+series sigma_e1
+sigma_e1.label(d) Sensitivity of energy conversion rate to energy price 
+series res_e
+res_e.label(d) Stock of energy resources
+series rho_m
+rho_m.label(d) Matter depletion ratio
+series rho_e
+rho_e.label(d) Energy depletion ratio
+series y_m
+y_m.label(d) Matter-determined real potential output
+series y_e 
+y_e.label(d) Energy-determined real potential output
+series mu_gr
+mu_gr.label(d) Matter intensity coefficient of green production
+series mu_c
+mu_c.label(d) Matter intensity coefficient of conventional production
+series epsilon_gr
+epsilon_gr.label(d) Energy intensity coefficient of green production
+series epsilon_c
+epsilon_gr.label(d) Energy intensity coefficient of conventional production
+series p_m
+p_m.label(d) Price of matter
+series p_m0
+p_m0.label(d) Autonomous component in price of matter
+series p_m1
+p_m1.label(d) Sensitivity of price of matter to supply-demand gap
+series p_en
+p_en.label(d) Price of energy
+series p_en0
+p_en0.label(d) Autonomous component in price of energy
+series p_en1
+p_en1.label(d) Sensitivity of price of energy to supply-demand gap
+series h0
+h0.label(d) Shock to investment share
+series emis_in
+emis_in.label(d) Industrial emissions of CO2
+series emis_l
+emis_l.label(d) Land emissions of CO2
+series emis
+emis.label(d) Total emissions of CO2
+series g_land
+g_land.label(d) Rate of decline of land-use CO2 emissions
+series o2
+o2.label(d) Mass of oxygen
+series beta
+beta.label(d) CO2 intensity coefficient
+series beta_gr
+beta_gr.label(d) CO2 intensity coefficient of green capital
+series beta_c
+beta_c.label(d) CO2 intensity coefficient of conventional capital
+series co2_at
+co2_at.label(d) Atmospheric CO2 concentration
+series phi11
+phi11.label(d) CO2 transfer coefficient
+series phi21 
+phi21.label(d) CO2 transfer coefficient
+series co2_up 
+co2_up.label(d) Upper ocean/biosphere CO2 concentration 
+series phi12
+phi12.label(d) CO2 transfer coefficient
+series phi22
+phi22.label(d) CO2 transfer coefficient
+series phi32 
+phi32.label(d) CO2 transfer coefficient
+series co2_lo 
+co2_lo.label(d) Lower ocean CO2 concentration
+series phi23
+phi23.label(d) CO2 transfer coefficient
+series phi33 
+phi33.label(d) CO2 transfer coefficient
+series temp_at
+temp_at.label(d) Atmosferic temperature
+series temp_lo
+temp_lo.label(d) Temperature of the lower ocean
+series adp
+adp.label(d) Sensitivity of capital depreciation to climate change
+series cen
+cen.label(d) Carbon mass of (non-renewable) energy
+series car
+car.label(d) Conversion rate of Gt of carbon into Gt of CO2
+series f
+f.label(d) Radiative forcing over pre-industrial levels (W/m^2) 
+series f2
+f2.label(d) Increase in radiative forcing due to doubling of CO2 concentraton \n since pre-industrial levels (W/m^2)
+series co2_at_pre
+co2_at_pre.label(d) Pre-industrial CO2 concentration in atmosphere (Gt)
+series f_ex 
+f_ex.label(d) Radiative forcing over pre-industrial levels (W/m^2) \n due to non-CO2 greenhouse gases (W/m^2)
+series fex 
+fex.label(d) Annual increase in radiative forcing due to non-CO2 greenhouse \n gas emissions (W/m^2)
+series t1
+t1.label(d) Speed of adjustment parameter in atmosperic temperature function
+series t2
+t2.label(d) Coefficient of heat loss from the atmosphere to the lower ocean in \n atmosperic temperature function 
+series t3
+t3.label(d) Coefficient of heat loss from the atmosphere to the lower ocean in \n lower ocean temperature function
+series sens
+sens.label(d) Equilibrium climate sensitivity
+series d_t
+d_t.label(d) Proportional gross damage (0 = no damage; 1 = catastrophe)
+series d_tp
+d_tp.label(d) Damage to productivity
+series d_tf
+d_tf.label(d) Damage to fund
+series dam1
+dam1.label(d) Parameter in damage function
+series dam2
+dam2.label(d) Parameter in damage function
+series dam3
+dam3.label(d) Parameter in damage function
+series dam_p
+dam_p.label(d) Share of productivity damage in total damage due to global warming
+series empl 
+empl.label(d) Employment level
+series hours
+hours.label(d) Annual working hours per employee
+series speed_h
+speed_h.label(d) Parameter in annual working hours per employee function
+series e_rate_n
+e_rate_n.label(d) Parameter of in annual working hours per employee function
+series lf 
+lf.label(d) Labour force (level)
+series g_lf 
+g_lf.label(d) Labour force growth rate
+series ad_lf 
+ad_lf.label(d) Adaptation of labour force to global warming
+series lf0 
+lf0.label(d) Coefficient of labour force growth rate function
+series lf1 
+lf1.label(d) Coefficient of labour force growth rate function
+series lf2 
+lf2.label(d) Coefficient of labour force growth rate function
+series u_rate 
+u_rate.label(d) Unemployment rate
+series lf3 
+lf3.label(d) Coefficient of labour force growth rate function
+series haz_ratio
+haz_ratio.label(d) Hazardous waste ratio
+series lf4 
+lf4.label(d) Deceleration of labour force
+series hws
+hws.label(d) Hazardous waste stock
+series haz
+haz.label(d) Proportion of hazardous waste to total waste
+series surf
+surf.label(d) Earth surface
+series a_n
+a_n.label(d) Real output per unit of labour
+series y_n
+y_n.label(d) Labour-determined real potential output
+series g_l 
+g_l.label(d) Endogenous growth rate of labour productivity
+series gl0
+gl0.label(d) Coefficient defining labour productivity
+series gl1
+gl1.label(d) Coefficient defining labour productivity
+series gl2 
+gl2.label(d) Coefficient defining labour productivity
+series gl3
+gl3.label(d) Decelaration in labour productivity
+series gross_nw_w
+gross_nw_w.label(d) Gross wealth of LC households
+series adv_s
+adv_s.label(d) Advances supplied by Central Bank
+series adv_d
+adv_d.label(d) Advances demanded by commercial banks
+series hb_s
+hb_s.label(d) Reserve requirement (supply)
+series hb_d
+hb_d.label(d) Reserve requirement (demand)
+series perc_hb
+perc_hb.label(d) Reserve requirement percentage
+series sav_w
+sav_w.label(d) LC households saving
+series p_w
+p_w.label(d) Actual price paid by LC households
+series p_p
+p_p.label(d) Actual price paid by UC households
+series vatrate_w
+vatrate_w.label(d) Average VAT rate paid by LC households
+series vatrate_p
+vatrate_p.label(d) Average VAT rate paid by UC households
+series cons_w_gr
+cons_w_gr.label(d) Green consumption of LC households
+series cons_p_gr
+cons_p_gr.label(d) Green consumption of UC households
+series cons_gr
+cons_gr.label(d) Total green consumption
+series cons_w_c
+cons_w_c.label(d) Brown consumption of LC households
+series cons_p_c
+cons_p_c.label(d) Brown consumption of UC households
+series c_w_gr
+c_w_gr.label(d) Green consumption share of LC households
+series c_p_gr
+c_p_gr.label(d) Green consumption share of UC households
+series c0_w
+c0_w.label(d) Coefficient of green consumption share of LC households
+series c1_w
+c1_w.label(d) Coefficient of green consumption share of LC households
+series c2_w
+c2_w.label(d) Coefficient of green consumption share of LC households
+series c0_p
+c0_p.label(d) Coefficient of green consumption share of UC households
+series c1_p
+c1_p.label(d) Coefficient of green consumption share of UC households
+series c2_p
+c2_p.label(d) Coefficient of green consumption share of UC households
+series vat_w
+vat_w.label(d) VAT paid by LC households
+series vat_p
+vat_p.label(d) VAT paid by UC households
+series vatrate_gr
+vatrate_gr.label(d) VAT rate on green consumption goods
+series vatrate_c
+vatrate_c.label(d) VAT rate on brown consumption goods
+series gamma4_gr
+gamma4_gr.label(d) Sensitivity of green investment share to green consumption share
+series gamma5_gr
+gamma5_gr.label(d) Sensitivity of green investment share to carbon tax rate 
+series ep_w
+ep_w.label(d) Price level expected by LC households
+series ep_p
+ep_p.label(d) Price level expected by UC households
+
+'  *****************************************************************************************************************************************************
+
+' Set sample size (starting from 2010 - 2 lags)
+smpl 2008 @last
+
+'Set parameters and initial values of variables
+
+'a) Macroeconomic equations
+c_w = 0.90 'LC households' propensity to consume out of income Dafermos et al. 2017 use 0.88 as an average value  
+c_p = 0.60 'UC households' propensity to consume out of income  
+c_aw =0.02 'LC households' propensity to consume out of wealth  
+c_ap = 0.0125 'UC households' propensity to consume out of wealth  
+perc_cons_w = 0.74 'Percentage of LC households consumption before 2019 (equilibrium value)
+tau_f = 0 'Carbon tax rate (USD per Gt of industrial emissions)  
+tau_w = 0.14 'Tax rate on LC households income (note: 14.42% is average tax rate in 2000-2010, WB)  
+tau_p = 0.14 'Tax rate on UC households income (note: 14.42% is average tax rate in 2000-2010, WB)  
+omega = 0.65 'Wage share to total output (exogenous, in line with median adjusted labour share for G20 countries, ILO and OECD data)  
+y = @recode(@date<@dateval("2018"),y_ob,@mean(y_ob,"2017 2017")) 'Total output (trillion USD), note: 73.2 in 2010 and 80.74 in 2017, WB  
+k_f = @recode(@date<@dateval("2018"),k_ob,@mean(k_ob,"2017 2017")) 'Total capital stock (initial value, Dafermos et al. 2017)  
+k_c = k_f*290.3/380.6 'Conventional capital (initial value, Dafermos et al. 2017) 
+k_gr = k_f-k_c 'Green capital (initial value)  
+phi = 0.11 'Sensitivity of investment share to utilisation gap 
+delta0_c = @recode(@date<@dateval("2018"),delta_ob,@mean(delta_ob,"2017 2017")) 'Capital depreciation rate (initial value)  
+delta_c = delta0_c 'Conventional capital depreciation rate  
+delta0_gr = delta0_c 'Conventional capital depreciation rate (initial value)
+delta_gr = delta0_gr 'Green capital depreciation rate  
+da_c = delta_c*k_c 'Conventional capital depreciation
+da_gr = delta_gr*k_gr 'Green capital depreciation 
+da_f = da_c + da_gr 'Total depreciation allowances
+be_a = 0.0328*y 'Autonomous component of business innovative spending (Deloitte's 2016-2017 Global CIO Survey)
+h0 = 0 'Shock to investment share 
+be = be_a 'Initial value of non-k private innovative spending 
+i_f = inv_ob - be 'Total private investment  
+gamma0_gr = 0.4 'Initial value of green investment share (Note: Dafermos et al. 2017 use 0.44 for 2018)  
+i_gr_share = gamma0_gr 'Green investment share  
+inv = inv_ob 'Total investment (including non-k innovation spending, accounting entry)  
+i_gr = i_gr_share*inv 'Green investment
+gamma1_gr = 0.20 'Autoregressive component of green investment share 
+gamma2_gr = 0.35 'Sensitivity of green investment share to government MOIS   
+gamma3_gr = 0.5*0.001 'Sensitivity of green investment share to environmental damages   
+gamma_tech = 0.25 'Private non-green innovative spending following government MOIS  
+g_gv_rout = 0.035 'Routine government expenditure growth rate          
+g_gv_mois = 0.035 'MOIS government spending growth rate 
+perc_gov_rout = 0.5 'Percentage of government routine spending before 2019 
+perc_gov_stab = 1 'Automatic stabilisers (additional spending per private demand loss) 
+w = 0.0088 'Wage rate  
+gov = gov_ob 'Total government spending (net of interests)  
+gov_rout = gov*perc_gov_rout 'Routine government spending
+gov_mois = gov-gov_rout 'Government MOIS  
+alpha = 0.44 'Percentage of MOIS devoted to GREEN innovation (in line with private sector) 
+gov_gr = alpha*gov_mois 'Government green MOIS (initial value)
+gov_tech= gov_mois - gov_gr 'Government non-green MOIS (initial value) 
+z_gr = i_gr + gov_gr 'Initial value of total green expenditure  
+z_tech = be + gov_tech 'Initial value of total non-green innovation expenditure  
+tax_f = 0 'Total taxes paid by firms (carbon tax) 
+tax_w = 0 'Total taxes paid by LC households
+tax_p = 0 'Total taxes paid by UC households
+tax = gov 'Total taxes (initial value)
+wb = wb_ob 'Wage bill (initial value)
+yd = y_ob 'Total disposable income (initial value)  
+cg = 0 'Capital gains on equity & shares
+yd_w = yd_w_ob 'Disposable income of LC households (initial value)  
+yd_p = yd - yd_w  'Diposable income of UC households (initial value)
+yd_p_hs = yd_p+cg 'Haig-Simons disposable income of UC households
+cons = cons_ob 'Total consumption  
+cons_w = cons*perc_cons_w 'Consumption of LC households (initial value, note: 77 is the average value after 2018)  
+cons_p = cons - cons_w 'Consumption of UC households (initial value)  
+cint = cint_ob 'Intermediate consumption  
+
+'b) Wealth, financial assets and interest rates
+lambda10 = 0.3 'Parameter in equity portfolio equation (intercept). 
+lambda11 = 0 '0.2 'Parameter in equity portfolio equation (r_e)
+lambda12 = 0 '-0.2 'Parameter in equity portfolio equation (income)
+lambda13  = 0 '-0.2 'Parameter in equity porffolio equation (r_b)
+lambda14  = -(lambda11+lambda13) 'Parameter in equity porffolio equation (r_d, horizontal constraint on coefficients on rates of return)
+lambda20 = 0.3 'Parameter in T-bills portfolio equation. 
+lambda21 = 0' -0.2 'Parameter in T-bills portfolio equation
+lambda22 = 0 '-0.2 'Parameter in T-bills portfolio equation
+lambda23  = 0 '0.2 'Parameter in T_bills porffolio equation
+lambda24  = -(lambda21+lambda23) 'Parameter in T_bills porffolio equation (horizontal constraint on coefficients on rates of return = 0)
+lambda30 = 0.3 'Parameter in deposit portfolio equation. 
+lambda31 = 0 '-0.2 'Parameter in deposit portfolio equation 
+lambda32 = 0 '0.2 'Parameter in deposit portfolio equation 
+lambda33 = 0 '-0.2 'Parameter in deposit porffolio equation 
+lambda34 = -(lambda31+lambda33) 'Parameter in deposit porffolio equation (adding-up constraint = 0) (horizontal constraint on coefficients on rates of return)
+lambda_w = 0.1 'Percentage of cash held by LC households
+r_cb = 0.015 'Interest rate set by central bank (Dafermos et al. 2017, based on WB)
+r_d = 0 'r_cb 'Interest rate on bank deposits (Dafermos et al. 2017, based on WB)
+r_mu_l = 0.055 'Banks mark-up (Dafermos et al. 2017, based on WB)  
+r_mu_b0 = 0.055 'Autonomous component of risk premium on T-bills 
+r_mu_b = r_mu_b0 'Risk premium on T-bills
+r_mu_b1 = 0.05 'Sensitivity of risk premium on T-bills to climate-related damages   
+r_l = r_cb + r_mu_l 'Interest rate on loans (Dafermos et al. 2017, based on WB)
+r_e = r_l 'Return on shares (initial value)
+r_b = r_cb + r_mu_b 'Interest rate on T-bills
+f_f = y - wb 'Profit of firms (initial value)
+f_b = 0 'Profit of banks (initial value)
+theta = 0.2 'Firms profit retention rate (Dafermos at al. 2018 use 0.6)
+'Note: lower value avoids negative bank profits  
+
+'c) Initial stock of debt and deficit
+p_e = 1 'target unit price for shares (convention)
+nw = @recode(@date<@dateval("2018"),nw_ob,@mean(nw_ob,"2017 2017")) 'Total net wealth (initial value)  
+nw_w = 0.5*nw 'Net wealth of LC households (initial value)
+nw_p = nw-nw_w 'Net wealth of UC households (initial value)
+b_s = nw 'Initial value of supply of government bills = initial value of government debt
+b_d = 0.15*nw_p 'Nominal demand for government bond (initial value)
+ee_d = 0.15*nw_p 'Nominal shares held by households
+e_s = ee_d/p_e 'Real supply of shares
+d_p = 0.3*nw_p 'Deposits held by UC households
+H_p = nw_p - ee_d - b_d - d_p 'Cash demanded by UC households
+b_cb = b_s - b_d 'T-bills purchased by CB (residual)
+H_s = b_cb 'Reserves created by CB        
+H_w = H_s - H_p 'Cash demanded by LC households
+hb_d = 11.80883 'Supply of CB reserves 
+hb_s = hb_d 'Demand for CB reserves
+l_s = -hb_s 'Supply of loans (equilibrium condition)
+l_d = l_s 'Total demand for loans (initial stock)  
+l_f = l_d 'Firms demand for loans (initial stock)
+l_w = l_d - l_f 'Demand for personal loans (initial stock)  
+adv_d = hb_d 'Advances demanded by commercial banks
+adv_s = adv_d 'Advances supplied by CB
+gross_nw_w = nw_w + l_w 'Gross wealth of LC households
+d_w = gross_nw_w - H_w 'Deposits held by LC households
+H_d = H_w + H_p 'Total cash demanded by households + already-created cash
+d_d = d_w+d_p 'Demand for deposits (initial stock)
+d_s = d_d 'Supply of deposits (equilibrium condition)
+rep = 0.25 'Repayment rate of LC households loans  
+psi = 0.3 'Gross percentage of new personal loans to total consumpion  
+chi = 0.001 'Equity to capital ratio  
+gdeb = 0.5*b_s 'Starting value for government debt (note: non-consolidated debt as a share of total debt)
+gdef = 0 'Government deficit (initial value)
+perc_hb = 0.03 'Percentage of (estra) reserves 
+
+'d) Auxiliary growth rates and indeces
+g_y0 = 0 'Initial value of output growth rate
+g_be0 = 0 'Initial value of innovation growth rate
+g_be = 0 'Initial value for growth rate of private innovative spending 
+g_x = 0 'Initial value of growth rate of real output
+
+'e) Production, labour and prices
+
+'Labour force coefficients
+
+'memo: 	 lf = lf(-1)*(1 + g_lf)*(1 - (1 - ad_lf)*d_tf(-1))
+			'g_lf = lf0 + lf1 - lf2*u_rate(-1) - lf3*haz_ratio(-1)
+			'lf0 = lf0(-1)*(1 - lf4)
+
+lf = lf_ob 'Labour force (billion people)  
+g_lf = 0.012 ' Labour force growth rate before global warming (Dafermos et al. 2017, based on UN 2015)  
+ad_lf = 0.95 ' Adaptation of labour force to global warming (Dafermos et al. 2017)
+lf0 = 0.022' Coefficient of labour force growth rate function (Dafermos et al. 2017 use 0.012)
+lf1 = 0.022 ' Coefficient of labour force growth rate function (Dafermos et al. 2017 use 0.012)  
+lf2 = 0.2 ' Coefficient of labour force growth rate function (Dafermos et al. 2017)  
+lf3 = 0.001 ' Coefficient of labour force growth rate function (Dafermos et al. 2017) 
+lf4 = 0.018 ' Deceleration of labour force (Dafermos et al. 2017)  
+haz_ratio = 0.03 ' Hazardous waste ratio (Gt/million km^2) (Dafermos et al. 2017)  
+
+'Employment coefficients
+
+'memo:		 g_l = gl0 + gl1+ gl2*g_x(-1)
+				'gl0 = gl0(-1)*(1 - gl3)
+				'empl = y/(hours*a_n)
+
+empl = lf*0.95 'Employment starting level in 2008, in line with World Bank data (Note: Dafermos et al. 2017 use 3.2 as initial level)  
+a_n = 0.012 'Hourly product per unit of labout input (Note: Dafermos et al. 2017 use 0.01)  
+gl0 = 0.029 'Autonomous growth rate of labour productivity (Dafermos et al. 2017)  
+gl1 = 0 'Autonomous growth rate of labour productivity (Dafermos et al. 2017)  
+gl2 = 0.6 'Sensitivity of labour productivity growth rate to growth rate of output (Dafermos et al. 2017)     
+gl3 = 0.007 'Rate of decline of autonomous (absolute) growth rate of labour productivity (Dafermos et al. 2017)  
+hours = 1800 'Annual working hours per employee, initial value (Dafermos et al. 2017 use 1800, based on Penn World Table 8.1)  
+speed_h = 100 ' Sensitivity of working day lenght to output gap  
+e_rate = 0.94 'Employment rate (Dafermos et al. 2017 use 0.94)  
+e_rate_n = 0.95 ' Parameter in labour hours function
+u_rate = 1 - e_rate ' Unemployment rate (Dafermos et al. 2017, based on WB)  
+u_n = 0.9 'Normal utilisation rate (exogenous)  
+u = @recode(@date<@dateval("2018"),u_ob,@mean(u_ob,"2017 2017")) 'Actual utilisation rate of plants 
+g_f0 = 0.001 'Baseline value of growth rate of real product per unit of capital before global warming damages (Dafermos et al. 2017) 
+g_f1 = 0 'Sensitivity of growth rate of real product per unit of capital to innovative spending growth rate  
+g_f = g_f0 'Growth rate of real product per unit of capital before global warming damages  
+a_f = 0.64 'Real product per unit of capital (Dafermos et al. 2017 use 0.27)  
+p1 = 0.80 'Weight of output price in general price level equation  
+p2 = 0.10 'Weight of energy in general price level equation 
+p3 = 0.10 'Weight of matter price in general price level equation
+p = 1 'Initial value of price level
+pi = 0 'Adjustment coefficient of price expectations  
+ny = y*p 'Nominal output at current prices
+y_n = y/(1-u_rate) 'Initial value of labour-constrained potential output  
+y_leontief = y_n 'Initial value of real potential output  
+
+'f) Damages due to global warming
+dam1 = 0 'Parameter of damage function (from Dafermos et al 2017; based, in turn, on Weitzman 2012, so that d_t = 0.5 when temp_at = 6C)
+dam2 = 0.00284 'Parameter of damage function  
+dam3 = 0.000005 'Parameter of damage function  
+dam_p = 0.1 ' Share of productivity damage in total damage due to global warming (from Dafermos et al 2017)  
+d_t = 0.0028 'Percentage of damages (initial value)  
+d_tf = 0.0026 'Percentage of damages to fund (initial value)  
+d_tp = 0.0003 'Percentage of damages to productivity (initial value)  
+
+'g) The ecosystem
+car = 3.67 'Coefficient for the conversion of Gt of carbon into Gt of CO2 (from Dafermos et al. 2017)
+cen = 9.8 'Carbon mass of the non-renewable energy sources (Gt) (from Dafermos et al. 2017)
+temp_at = 1 'Atmospheric temperature over pre-industrial levels (C, from Dafermos et al. 2017, based on Met Office)  
+temp_lo = 0.0068 'Lower ocean temperature over pre-industrial levels (C, from Dafermos et al. 2017, based on Nordhaus and Sztorz 2013)  
+t1 = 0.027 'Speed of adjustment parameter in atmosperic temperature function (from Dafermos et al. 2017)  
+t2 = 0.018 'Coefficient of heat loss from the atmosphere to the lower ocean in atmosperic temperature function 
+t3 = 0.005 'Coefficient of heat loss from the atmosphere to the lower ocean in lower ocean temperature function 
+sens = 3 'Equilibrium climate sensitivity (from Dafermos et al. 2017) 
+beta_c = 0.09 'Parameter defining CO2 intensity coefficient of conventional capital (Dafermos et al. 2017 use 0.07 as initial value)
+beta_gr = 0.05 'Parameter defining CO2 intensity coefficient of green capital
+co2_at = 3120 'Initial level of atmospheric CO2 concentration (cumulative level in 1960) 
+co2_up = 5628.8 'Upper ocean/biosphere CO2 concentration. Calculations based on Dafermos et al. 2017 (and Nordhaus and Sztorz 2013) 
+co2_lo = 36706.7 'Lower ocean CO2 concentration 
+phi11 = 0.9817 'CO2 transfer coefficient (taken from Dafermos et al. 2017) 
+phi12 = 0.0183 'CO2 transfer coefficient
+phi21 = 0.0080 'CO2 transfer coefficient
+phi22 = 0.9915 'CO2 transfer coefficient
+phi23 = 0.0005 'CO2 transfer coefficient
+phi32 = 0.0001 'CO2 transfer coefficient
+phi33 = 0.9999 'CO2 transfer coefficient
+adp = 0.5 'Sensitivity of capital depreciation rate to sustainability gap
+adk_c = 0.75 'Adaptation coefficient of conventional capital stock 
+adk_gr = 0.75 'Adaptation coefficient of green capital stock 
+rho_rec = 0.24 'Recycling rate of conventional capital (Dafermos et al. 2017) 
+mu_gr = 0.61 'Matter intensity coefficient on green production (Dafermos et al. 2017) 
+mu_c = 0.76 'Matter intensity coefficient on conventional production (Dafermos et al. 2017) 
+mu = mu_gr*k_gr/k_f + mu_c*k_c/k_f 'Matter intensity coefficient
+des = mu*da_f 'Destruction of socio-economic stock
+rec = rho_rec*des 'Recycled socio-economic stock
+y_mat = mu*y 'Production of material goods
+mat = y_mat - rec 'Extraction of matter
+wa = 11.0 'Waste generated by production activities (Gt) (Dafermos et al. 2017) 
+hws = 14 ' Hazardous waste stock '(Gt) (Dafermos et al. 2017) 
+haz = 0.04 ' Proportion of hazardous waste to total waste (Dafermos et al. 2017; see EEA 2012, p. 22) 
+surf = 510.1 ' Earth surface '(million km^2) 
+res_m = 388889 'Stock of material resources in 2010 (Dafermos et al. 2017, based on UNEP 2011) 
+k_m = 6000 'Stock of material reserves (Dafermos et al. 2017) 
+res_e = 542000 'Stock of non-renewable energy resources in 2010 (Dafermos et al. 2017, based on BGR 2015, p. 33) 
+k_e = 37000 'Stock of energy reserves (Dafermos et al. 2017, based on BGR 2015, p. 33) 
+k_se = 1135.6 'Socio-economic stock (Dafermos et al. 2017) 
+sigma_m0 = 0.0005 'Autonomous component of matter conversion rate (Dafermos et al. 2017) 
+sigma_m1 = 0.00001 'Sensitivity of matter conversion rate to energy price 
+sigma_m = sigma_m0 'Matter conversion rate
+conv_m = sigma_m*res_m 'Material resources converted to reserves
+sigma_e0 = 0.003 'Autonomous component of non-renewable energy conversion rate (Dafermos et al. 2017) 
+sigma_e1 = 0.00001 'Sensitivity of energy conversion rate to energy price 
+sigma_e = sigma_e0 'Energy conversion rate
+conv_e = sigma_e*res_e 'Energy resources converted to reserves
+epsilon_gr = 6.65 'Energy intensity coefficient on green production (Dafermos et al. 2017) 
+epsilon = 7.92 'Energy intensity coefficient (initial value) (Dafermos et al. 2017) 
+epsilon_c = (epsilon - epsilon_gr*k_gr/k_f)*k_f/k_c 'Energy intensity coefficient on conventional production 
+eta_e_gr = 0.4 'Share of renewable energy linked with green production 
+eta_e = 0.14 'Share of renewable energy (initial value) (Dafermos et al. 2017) 
+eta_e_c = (eta_e - eta_e_gr*k_gr/k_f)*k_f/k_c 'Share of renewable energy linked with conventional production 
+e = epsilon*y 'Energy required for production 
+er = eta_e*e 'Renewable energy at the end of the period 
+en = e + er 'Non-renewable energy 
+ed = e + en 'Dissipated energy at the end of the period 
+emis_l = 4 'Land-use CO2 emissions (Gt, against 36 Gt from industrial activities - taken from Dafermos et at. 2017) 
+emis_in = 36 'Industrial CO2 emissions (Gt) 
+g_land = 0.044 'Rate of decline of land-use CO2 emissions (taken from Dafermos et al. 2017) 
+f = 2.3 ' Radiative forcing over pre-industrial levels (W/m^2) (taken from Dafermos et al. 2017) 
+f2 = 3.8 ' Increase in radiative forcing due to doubling of CO2 concentraton since pre-industrial levels (W/m^2)
+co2_at_pre = 2156.2 ' Pre-industrial CO2 concentration in atmosphere (Gt) 
+'co2_up_pre = 4950.5 ' Pre-industrial CO2 concentration in upper ocean/biosphere (Gt)
+'co2_lo_pre = 36670 ' Pre-industrial CO2 concentration in lower ocean (Gt)
+f_ex = 0.28 ' Radiative forcing over pre-industrial levels (W/m^2) due to non-CO2 greenhouse gases (W/m^2) 
+fex = 0.005 ' Annual increase in radiative forcing due to non-CO2 greenhouse gas emissions (W/m^2) 
+
+'h) Matter and energy unit prices
+p_m0 = 1 'Autonomous component of matter price
+p_m1 = 0.2 'Sensitivity of matter price to demand-supply gap
+p_m = p_m0 'Price of matter (initial value)
+p_en0 = 1 'Autonomous component of energy price
+p_en1 = 0.2 'Sensitivity of energy price to demand-supply gap
+p_en = p_en0 'Price of energy (initial value)
+
+'i) New coefficients for VAT and green consumption
+c0_w = 0.15 'Coefficient of green consumption share of LC households
+c1_w = 0.5 'Coefficient of green consumption share of LC households
+c2_w = 0.5 'Coefficient of green consumption share of LC households
+c0_p = 0.15 'Coefficient of green consumption share of UC households
+c1_p = 0.5 'Coefficient of green consumption share of UC households
+c2_p = 0.5 'Coefficient of green consumption share of UC households
+vatrate_gr = 0.02 'VAT rate on green consumption goods
+vatrate_c = 0.02 'VAT rate on brown consumption goods
+gamma4_gr = 0.02 'Sensitivity of green investment share to green consumption 
+gamma5_gr = 0.1 'Sensitivity of green investment share to carbon tax rate
+p_w = p 'Price paid by LC households
+p_p = p 'Price paid by UC households
+ep_w = p_w 'Price level expected by LC households
+ep_p = p_p 'Price level expected by UC households
+cons_gr = 0 'Total green consumption
+
+'j) New coefficients for prices and wages
+p_y = 1 'Price ouf output (initial value)
+mk0 = p_y*a_n/w - 1 'Autonomous compoent of mark up over labour cost (initial value to get p_y = 1)
+mk1 = 0.1 'Sensitivity of mark-up to output gap
+mk = mk0 'Mark up over labour cost 
+parw = 0.9 'Productivity increase captured by wage rate
+
+'k) Durable goods
+dc = cons 'Stock of durable goods
+zeta = 0.015 'Proportion of durable goods discarded every year (Dafermos et al. 2017 use 0.007 yo obtain dlog(dc) = 3%)
+
+
+'  **************************************************************************************************************************************************
+'  *****************************************************************************************************************************************************
+
+'Estimate key coefficients of the model
+
+'Set sample size
+smpl 1960 2017
+
+'Create and estimate coefficients
+coef(50) o
+
+'Macroeconomic variables (at constant prices)
+
+'Total consumption before 2018
+equation eq_cons.ls(cov=white) cons_ob = o(3) + o(4)*cons_ob(-1)
+
+'Total government spending
+equation eq_gov.ls(cov=white) gov_ob = o(6) + o(7)*gov_ob(-1)
+
+'Intermediate consumption
+equation eq_cint.ls(cov=white) cint_ob = o(8) + o(9)*cint_ob(-1)
+
+'Net output deflator before 2018
+equation eq_p.ls(cov=white) p_ob = o(11) + o(12)*p_ob(-1)    
+
+'Labour force before 2018
+equation eq_lf.ls(cov=white) lf_ob = o(13) + o(14)*lf_ob(-1)    
+
+'Total investment (including BE) before 2018
+equation eq_inv.ls(cov=white) inv_ob = o(15) + o(16)*inv_ob(-1)    
+
+
+'  *****************************************************************************************************************************************************
+'  *****************************************************************************************************************************************************
+
+' Set sample size 
+smpl 2010 2075
+
+
+'Create the model (named 'superecom2')
+
+model superecom2
+
+
+'Set up system of difference equations
+
+'1) FIRMS TRANSACTIONS
+superecom2.append y = cons + i_f + be + gov - cint 'Aggregate demand (no taxprod)  
+superecom2.append ny = y*p 'Nominal output at current prices
+superecom2.append cint = o(8) + o(9)*cint(-1) 'Intermediate consumption [ESTIMATED]
+superecom2.append wb = w*empl*hours 'Endogenous wage bill, using exogenous wage rate  
+superecom2.append omega = wb/y 'Endogenous wage share  
+superecom2.append l_f = l_f(-1) + i_f + be - cint - d(e_s)*p_e - f_fu 'Change in loans to firms
+superecom2.append f_f = y - wb - r_l(-1)*l_f(-1) - tax_f 'Firms profit net of taxes
+superecom2.append f_fu = f_f*theta 'Retained profits  
+superecom2.append f_fd = f_f - f_fu 'Distributed profits (dividends)  
+
+'2) FIRMS INVESTMENT DECISIONS
+superecom2.append k_c = k_c(-1) + i_c - da_c 'Conventional capital stock
+superecom2.append i_f = h*y(-1)*(1 - d_t(-1)) - be_a 'Total investment function, excluding non-k innovation spending and including effect of global warming damages (note: >= depreciation)  
+superecom2.append u = @recode(@date<@dateval("2018"),u_ob,       u(-1) + u(-1)*( (1+g_y)/((1 + g_k)* (1 + dlog(a_f))) - 1)    ) 'Utilisation rate
+superecom2.append h = @recode(@date<@dateval("2018"),h_ob, h(-1)/(1 - phi*(u(-1) - u_n))) 'Investment to total output
+superecom2.append i_c = i_f - i_gr 'Conventional investment
+superecom2.append da_c = delta_c*k_c(-1) 'Depreciation allowances on conventional capital
+superecom2.append i_gr = i_gr_share*i_f 'Private green investment
+superecom2.append i_gr_share = gamma0_gr + gamma1_gr*i_gr_share(-1) + gamma2_gr*gov_gr(-1)/gov(-1) + gamma3_gr*d_t(-1) + gamma4_gr*cons_gr(-1)/cons(-1) + gamma5_gr*tau_f(-1) 'Share of green investment to total investment
+superecom2.append k_gr = k_gr(-1) + i_gr - da_gr 'Green capital stock
+superecom2.append k_f = k_gr + k_c 'Total capital stock
+superecom2.append da_gr = delta_gr*k_gr(-1) 'Depreciation allowances on green capital
+superecom2.append da_f = da_gr + da_c 'Total depreciation allowances
+superecom2.append be = @recode(@date<@dateval("2018"),inv-i_f,be_a + gamma_tech*gov_tech(-1)) 'Corporate non-green innovation expenditure (depending on current government spending)  
+superecom2.append inv = @recode(@date<@dateval("2018"),o(15) + o(16)*inv(-1),i_f + be) 'Non-investment innovative spending plus total investment (accounting entry to be compared to observed data)  
+superecom2.append e_s = e_s(-1) + chi*i_f(-1)/p_e(-1) 'Number of shares issued by firms
+superecom2.append g_y = @recode(y>0 and y(-1)>0,d(log(y)) + g_y0,g_y0) 'Rate of growth of real output 
+superecom2.append g_k = @recode(k_f>0 and k_f(-1)>0,d(log(k_f)),0) 'Rate of capital accumulation
+
+'3) HOUSEHOLDS INCOME AND WEALTH
+superecom2.append yd_w = wb + r_d(-1)*d_w(-1) - tax_w - r_l(-1)*l_w(-1) - vat_w 'LC households disposable income: labour incomes plus interests on deposits minus taxes minus payments to banks  
+superecom2.append yd_p = f_fd + f_b + r_d(-1)*d_p(-1) + r_b(-1)*b_d(-1) - tax_p - vat_p 'UC households disposable income: entrepreneurial and financial incomes net of taxes
+superecom2.append yd_p_hs = yd_p+cg 'Haig-Simons disposable income of UC households
+superecom2.append yd = yd_w + yd_p 'Total disposable income
+superecom2.append sav_w = yd_w - cons_w 'LC households' saving  
+superecom2.append nw_w = nw_w(-1) + sav_w 'Wealth of LC households  
+superecom2.append l_w = l_w(-1)*(1 - rep) + psi*cons_w 'Loans demanded by LC households  
+superecom2.append bur = (l_w(-1)*(rep + r_l(-1)))/yd_w 'LC households debt burden  
+superecom2.append nw_p = nw_p(-1) + yd_p_hs - cons_p 'Wealth of UC households (Note: capital gains are now included in yd_p_hs) 
+superecom2.append nw = nw_w + nw_p 'Total wealth of households
+
+'4) HOUSEHOLDS CONSUMPTION DECISIONS
+superecom2.append cons_w = @recode(@date<@dateval("2018"),perc_cons_w*cons,(c_w*yd_w*ep_w/p_w + c_aw*nw_w(-1)*ep_w/p_w)*(1 - d_t(-1))) 'Consumption of LC households, including expected price and effect of climate warming [ESTIMATED]  
+superecom2.append cons_p = @recode(@date<@dateval("2018"),cons-cons_w,(c_p*yd_p_hs*ep_p/p_p + c_ap*nw_p(-1)*ep_p/p_p)*(1 - d_t(-1)) ) 'Consumption of UC households, including expected price and capital gains and effect of climate warming [ESTIMATED]  
+superecom2.append cons = @recode(@date<@dateval("2018"),o(3) + o(4)*cons(-1),cons_w + cons_p) 'Total consumption [ESTIMATED]  
+superecom2.append cons_w_gr = c_w_gr*cons_w 'Green consumption of LC households  
+superecom2.append cons_p_gr = c_p_gr*cons_p 'Green consumption of UC households  
+superecom2.append cons_gr = cons_w_gr + cons_p_gr 'Total green consumption  
+superecom2.append cons_w_c = cons_w - cons_w_gr 'Brown consumption of LC households  
+superecom2.append cons_p_c = cons_p - cons_p_gr 'Brown consumption of UC households  
+superecom2.append c_w_gr = c0_w + c1_w*d_t(-1) + c2_w*(vatrate_c - vatrate_gr) 'Green consumption share of LC households  
+superecom2.append c_p_gr = c0_p + c1_p*d_t(-1) + c2_p*(vatrate_c - vatrate_gr) 'Green consumption share of UC households  
+
+'5) HOUSEHOLDS PORTFOLIO DECISIONS
+superecom2.append p_e = @recode(@date<@dateval("2012"),1,(lambda10*nw_p(-1) + lambda11*nw_p(-1)*r_e(-1) + lambda12*yd_p(-1) + lambda13*nw_p(-1)*r_b(-1) + lambda14*nw_p(-1)*r_d(-1))/e_s) 'Unit price of equity & shares (endogenous market-clearing, non-negative condition) 
+superecom2.append e_d = e_s 'Real equity & shares held/demanded by capitalist households
+superecom2.append ee_d = e_d*p_e 'Nominal equity & shares held/demanded by capitalist households
+superecom2.append b_d = lambda20*nw_p(-1) + lambda21*nw_p(-1)*r_e(-1) + lambda22*yd_p(-1) + lambda23*nw_p(-1)*r_b(-1) + lambda24*nw_p(-1)*r_d(-1) 'Nominal T-bills held/demanded by capitalist households (bbd =< b_s condition)
+superecom2.append d_p = lambda30*nw_p(-1) + lambda31*nw_p(-1)*r_e(-1) + lambda32*yd_p(-1) + lambda33*nw_p(-1)*r_b(-1) + lambda34*nw_p(-1)*r_d(-1) 'Deposits held/demanded by capitalist households   
+superecom2.append H_p = nw_p - ee_d - b_d - d_p '0.5*H_d 'nw_p-ee_d-b_d-d_p 'Cash held by capitalis households 
+superecom2.append d_w = gross_nw_w - H_w 'Deposits held by LC households
+superecom2.append gross_nw_w = nw_w + l_w 'Gross wealth of LC households 
+superecom2.append H_w = lambda_w*gross_nw_w 'Cash held by LC households (residual)
+superecom2.append d_d = d_w + d_p 'Total demand for bank deposits
+superecom2.append H_d = H_w + H_p 'Total demand for cash 
+
+'6) COMMERCIAL BANKS AND CENTRAL BANK
+superecom2.append d_s = d_d 'Supply of bank deposits 
+superecom2.append adv_d = l_s - d_s + hb_d 'Advances demanded (or reserves held by) commercial banks 
+superecom2.append adv_s = adv_d 'Advances supplied by (or reserves held at) CB on demand 
+superecom2.append hb_d = perc_hb*d_s(-1) 'Reserve requirement (demand)
+superecom2.append hb_s = hb_d 'Reserve requirement (supply) 
+superecom2.append l_s = l_s(-1) + d(l_d) 'Supply of loans
+superecom2.append l_d = l_f + l_w 'Total demand for loans (including mortgages)
+superecom2.append f_b = l_s(-1)*r_l(-1) - d_s(-1)*r_d(-1) 'Bank profit
+superecom2.append b_cb = b_s - b_d 'T-bills purchased by CB (residual amount) whith no price mechanism
+superecom2.append H_s = b_cb + adv_s - hb_s 'Cash created by CB on demand  
+superecom2.append r_l = r_cb + r_mu_l 'Interest rate on loans  
+superecom2.append r_d = r_cb 'Interest on bank deposits
+
+'7) OTHER FINANCIAL VARIABLES AND INDICES
+superecom2.append cg = e_s(-1)*d(p_e) '+ b_s(-1)*d(p_b) 'Capital gains/losses on shares (and bonds if any)
+superecom2.append r_e = @recode(ee_d(-1)>0,f_fd/ee_d(-1),r_l) 'Dividend yields of firms  
+superecom2.append q = (e_s*p_e + l_f)/k_f 'Tobin q
+superecom2.append lev = l_f/(e_s*p_e + l_f) 'Leverage ratio of firms
+superecom2.append pe = p_e/(f_f/e_s(-1)) 'Price-earnings ratio
+
+'8) GOVERNMENT SPENDING AND TAXATION
+superecom2.append tax = tax_f + tax_w + tax_p + vat_w + vat_p 'Total tax revenue
+superecom2.append vat_w = cons_w*vatrate_w/(1+vatrate_w) 'VAT paid by LC households  
+superecom2.append vat_p = cons_p*vatrate_p/(1+vatrate_p) 'VAT paid by LC households  
+superecom2.append vatrate_w = vatrate_gr*cons_w_gr/cons_w + vatrate_c*cons_w_c/cons_w 'Average VAT rate paid by LC households  
+superecom2.append vatrate_p = vatrate_gr*cons_p_gr/cons_p + vatrate_c*cons_p_c/cons_p 'Average VAT rate paid by UC households  
+superecom2.append tax_f = tau_f*emis_in(-1) 'Taxes on firms (carbon tax)
+superecom2.append tax_w = tau_w*(wb + r_d(-1)*d_w(-1)) 'Taxes on LC households income
+superecom2.append tax_p = tau_p*(f_fd + f_b + r_d(-1)*d_p(-1) + r_b(-1)*b_d(-1)) 'Taxes on UC households income
+superecom2.append gov = @recode(@date<@dateval("2018"),o(6)+o(7)*gov(-1), gov_rout + gov_mois) ' + gov_stab) 'Total government spending (net of interests, including automatic stabilisers) [ESTIMATED]  
+superecom2.append gov_rout =  @recode(@date<@dateval("2018"),perc_gov_rout*gov,gov_rout(-1)*(1+g_gv_rout)) 'Routine government spending [ESTIMATED]  
+superecom2.append gov_mois = @recode(@date<@dateval("2018"),gov - gov_rout,gov_mois(-1)*(1+g_gv_mois)) 'Government MOIS  
+superecom2.append gov_gr = alpha*gov_mois 'MOIS devoted to GREEN innovation
+superecom2.append gov_tech = (1-alpha)*gov_mois 'MOIS not directly devoted to GREEN innovation
+
+'9) GOVERNMENT BUDGET
+superecom2.append b_s = b_s(-1) + gdef 'Real T-bills issued by government to cover expected deficit (NOTE: if gdef < 0 then T-bills held by CB are sold back to government)
+superecom2.append gdef = gov + r_b(-1)*b_d(-1) - tax 'Government deficit (note: interests paid on debt held by households only, b_d instead of b_s*p_b)
+superecom2.append gdeb = gdeb(-1) + gdef 'Stock of government debt
+superecom2.append r_b = r_cb + r_mu_b 'Rate of return on T-bills  
+superecom2.append r_mu_b = r_mu_b0 + r_mu_b1*d_t(-1) 'Risk premium on T-bills, depending on global warming-related damages  
+
+'12) THE ECOSYSTEM: MATERIAL RESOURCES AND RESERVES, PLUS HAZARDOUS WASTE  
+superecom2.append y_mat = mu*y 'Production of material goods
+superecom2.append mat = y_mat - rec 'Extraction of matter
+superecom2.append rec = rho_rec*des 'Recycled socio-economic stock
+superecom2.append des = mu*(da_f + zeta*dc(-1)) 'Destructed or discarded socio-economic stock (including a % of durable goods) 
+superecom2.append dc = dc(-1) + cons - zeta*dc(-1) 'Stock of durable goods
+superecom2.append k_se = k_se(-1) + y_mat - des 'Socio-economic stock
+superecom2.append wa = des - rec 'Waste generated by production activities
+superecom2.append hws = hws(-1) + haz*wa 'Hazardous waste  
+superecom2.append haz_ratio = hws/surf 'Hazardous waste ratio (Gt/Km^2)  
+superecom2.append k_m = k_m(-1) + conv_m - mat 'Stock of material reserves
+superecom2.append conv_m = @recode(sigma_m*res_m(-1)>mat,sigma_m*res_m(-1),mat(-1))  'Material resources converted to reserves 
+superecom2.append res_m = res_m(-1) - conv_m 'Stock of material resources
+superecom2.append p_m = p_m0 + p_m1*(mat(-1)/(sigma_m(-1)*res_m(-1))) 'Unit price of matter
+superecom2.append sigma_m = sigma_m0 + sigma_m1*p_m(-1) 'Endogenous conversion rate of matter resources
+superecom2.append cen = emis/car 'Carbon mass of (non-renewable) energy 
+superecom2.append o2 = emis - cen 'Mass of oxygen 
+
+'13) THE ECOSYSTEM: ENERGY RESOURCES AND RESERVES
+superecom2.append e = epsilon*y 'Energy required for production  
+superecom2.append er = eta_e*e 'Renewable energy at the end of the period  
+superecom2.append en = e - er 'Non-renewable energy  
+superecom2.append ed = en + er 'Dissipated energy at the end of the period
+superecom2.append k_e = k_e(-1) + conv_e - en 'Stock of energy reserves
+superecom2.append conv_e = @recode(sigma_e(-1)*res_e(-1)>e,sigma_e*res_e(-1),e(-1)) 'Energy resources converted to reserves 
+superecom2.append res_e = res_e(-1) - conv_e 'Stock of energy resources
+superecom2.append p_en = p_en0 + p_en1*(en(-1)/(sigma_e(-1)*res_e(-1))) 'Unit price of non-renewable energy
+superecom2.append sigma_e = sigma_e0 + sigma_e1*p_en(-1) 'Endogenous conversion rate of energy resources
+
+'14) 'EMISSIONS AND CLIMATE CHANGE (based on Dafermos et al. 2017; and Nordhaus and Sztorc 2013)
+superecom2.append emis_in = beta*en 'Industrial emissions of CO2 (15 per year = 4 per quarter in 1960)  
+superecom2.append emis_l = emis_l(-1)*(1 - g_land) 'Land emissions of CO2  
+superecom2.append emis = emis_in + emis_l 'Total emissions of CO2  
+superecom2.append co2_at = emis + phi11*co2_at(-1) + phi21*co2_up(-1) 'Atmospheric CO2 concentration  
+superecom2.append co2_up = phi12*co2_at(-1) + phi22*co2_up(-1) + phi32*co2_lo(-1) 'Upper ocean/biosphere CO2 concentration
+superecom2.append co2_lo = phi23*co2_up(-1) + phi33*co2_lo(-1) 'Lower ocean CO2 concentration  
+superecom2.append f = @recode(f2*@logx(co2_at/co2_at_pre,2) + f_ex<2.3,2.3,f2*@logx(co2_at/co2_at_pre,2) + f_ex) 'Radiative forcing over pre-industrial levels (W/m^2)  
+superecom2.append f_ex = f_ex(-1) + fex  'Radiative forcing over pre-industrial levels (W/m^2) due to non-CO2 greenhouse gases (W/m^2)  
+superecom2.append temp_at = temp_at(-1) + t1*(f - (f2/sens)*temp_at(-1)-t2*(temp_at(-1) - temp_lo(-1))) 'Atmosperic temperature  
+superecom2.append temp_lo = temp_lo(-1) + t3*(temp_at(-1)-temp_lo(-1)) 'Lower ocean temperature  
+
+'15) ECOLOGICAL EFFICIENCY
+superecom2.append mu = mu_gr*k_gr/k_f + mu_c*k_c/k_f 'Matter intensity coefficient
+superecom2.append epsilon = epsilon_gr*k_gr/k_f + epsilon_c*k_c/k_f 'Energy intensity coefficient
+superecom2.append beta = beta_gr*k_gr/k_f + beta_c*k_c/k_f 'CO2 intensity coefficient
+superecom2.append eta_e = eta_e_gr*k_gr/k_f + eta_e_c*k_c/k_f 'Share of renewable energy 
+superecom2.append mu_gr = mu_gr(-1) - @recode(@date<@dateval("2020"),0,mu_gr(-1)*0.01) 'Matter intensity coefficient of green capital
+superecom2.append epsilon_gr = epsilon_gr(-1) - @recode(@date<@dateval("2020"),0,epsilon_gr(-1)*0.01) 'Energy intensity coefficient of green capital
+superecom2.append beta_gr = beta_gr(-1) - @recode(@date<@dateval("2020"),0,beta_gr(-1)*0.01) 'CO2 intensity coefficient of green capital
+superecom2.append eta_e_gr = eta_e_gr(-1) + @recode(@date<@dateval("2020"),0,eta_e_gr(-1)*0.01) 'Share of renewable energy of green capital 
+superecom2.append rho_m = mat/k_m(-1) 'Matter depletion ratio
+superecom2.append rho_e = en/k_e(-1) 'Energy depletion ratio (including non-renewable only)***
+
+'16) ECOLOGICAL FEEDBACKS AND DAMAGES
+superecom2.append delta_c = delta0_c + (1-delta0_c)*(1 - adk_c)*d_tf(-1) 'Climate change impact on depreciation of conventional capital stock
+superecom2.append delta_gr = delta0_gr + (1-delta0_gr)*(1 - adk_gr)*d_tf(-1) 'Climate change impact on depreciation of green capital stock  
+superecom2.append a_f = a_f(-1)*(1 + g_f)*(1-(1 - adp)*d_tp(-1)) 'Endogenous product per unit of capital, accounting for climate change damages 
+superecom2.append g_f = g_f0 + g_f1*g_be(-1)  'Endogenous growth rate of "capital productivity", influenced by innovative spending  
+superecom2.append g_l = gl0 + gl1+ gl2*g_x(-1) 'Endogenous growth rate of labour productivity  
+superecom2.append gl0 = gl0(-1)*(1 - gl3) 'Deceleration in labour productivity  
+superecom2.append a_n = a_n(-1)*(1 + g_l)*(1- (1 - adp)*d_tp(-1)) 'Endogenous productivity of labour, accounting for climate change damages 
+superecom2.append d_t = 1 - 1/(1 + dam1*temp_at + dam2*temp_at^2 + dam3*temp_at^(6.6754)) 'Proportion of gross damage due to changes in atmosperic temperature (0 < d_t < 1, see Dafermos et al. 2017, Moyer et al. 2014, Weitzman 2012)  
+superecom2.append d_tp = dam_p*d_t 'Productivity damage caused by global warming  
+superecom2.append d_tf = 1 - (1-d_t)/(1-d_tp) 'Damage to fund caused by global warming  
+
+'17) POPULATION, LABOUR FORCE AND EMPLOYMENT
+superecom2.append lf = @recode(@date<@dateval("2018"), o(13) + o(14)*lf(-1), lf(-1)*(1 + g_lf)*(1 - (1 - ad_lf)*d_tf(-1))) 'Labour force level [ESTIMATED]
+superecom2.append g_lf = lf0 + lf1 - lf2*u_rate(-1) - lf3*haz_ratio(-1) ' Growth rate of labour force  
+superecom2.append lf0 = lf0(-1)*(1 - lf4) 'Autonomous component of labour force growth rate (decelerating over time)  
+superecom2.append empl = @recode(y/(hours*a_n)>lf,lf,y/(hours*a_n)) 'Employment level  
+superecom2.append hours = @recode(hours(-1) + speed_h*(e_rate(-1)-e_rate_n)>3000,3000,hours(-1) + speed_h*(e_rate(-1)-e_rate_n)) 'Actual working day  
+superecom2.append e_rate = empl/lf 'Labour utilisation rate (employment rate; alternatively: y/y_n)   
+superecom2.append u_rate = 1 - e_rate 'Unemployment rate  
+
+'18) PRODUCTION FUNCTION AND PRICE LEVEL
+superecom2.append y_f = a_f*k_f  'Capital-determined real potential output
+superecom2.append y_n = a_n*lf(-1)*hours(-1) 'Labour-determined real potential output 
+superecom2.append y_m = (k_m(-1)+rec)/mu  'Matter-determined real potential output
+superecom2.append y_e = k_e(-1)/epsilon  'Energy-determined real potential output
+superecom2.append y_leontief_eco = @recode(y_m<y_e,y_m,y_e) 'Real potential output - ecological constraints only  
+superecom2.append y_leontief_tec = @recode(y_f<y_n,y_f,y_n) 'Real potential output - economic constraints only  
+superecom2.append y_leontief = @recode(y_leontief_eco<y_leontief_tec,y_leontief_eco,y_leontief_tec) 'Real potential output - all constraints (Leonfief function)  
+
+superecom2.append p_y = (w/a_n)*(1+mk) 'Price of output
+superecom2.append w = w(-1)*(1 + parw*d(a_n)/a_n) 'Money wage rate
+superecom2.append mk = mk0 + mk1*(y(-1)/y_leontief(-1))  'Mark-up over labour cost
+
+superecom2.append p = @recode(@date<@dateval("2018"), o(11) + o(12)*p(-1), p1*p_y + p2*p_en + p3*p_m)  'General price level [ESTIMATED]
+superecom2.append p_w = p*(1+vatrate_w)  'Actual price paid by LC households  
+superecom2.append p_p = p*(1+vatrate_w)  'Actual price paid by UC households  
+superecom2.append ep_w = @recode(@date<@dateval("2020"),p_w,p_w(-1) - pi*(ep_w(-1)-p_w(-2))) 'Price expected by LC households (adaptive expectations)  
+superecom2.append ep_p = @recode(@date<@dateval("2020"),p_p,p_p(-1) - pi*(ep_p(-1)-p_p(-2))) 'Price expected by UC households (adaptive expectations)  
+
+'19) OTHER GROWTH RATES AND INDICES 
+superecom2.append u_m = y/y_m 'Matter utilisation rate  
+superecom2.append u_e = y/y_e 'Energy utilisation rate  
+superecom2.append ineq_y = yd_p_hs/yd 'Income inequality (including CGs)
+superecom2.append ineq_v = nw_p/nw 'Wealth inequality
+
+'   **************************************************************************************************************************************************
+'   **************************************************************************************************************************************************
+
+'Use "add factors" to improve in-sample forecast ("_a" values)
+''delete *_a
+superecom2.addassign(v) cint cons cons_w lf p gov h inv 'list variables here         '@all 'NOTE: v = variable shift; i = intercept shift
+superecom2.addinit(v=n) cint cons cons_w lf p gov h inv 'list variables here           '@all 'NOTE: s=a, s=b and s=o set active scenario, v=z, v=n, v=b and v=a set add factors value
+
+'   **************************************************************************************************************************************************
+'   **************************************************************************************************************************************************
+
+
+' Select the baseline Scenario
+superecom2.scenario "baseline"
+
+'Define the sample
+smpl 2010 2100
+
+'Solve the model
+superecom2.solve(i=a, s=d, d=d)   'initial solution values = values in period prior to start, deterministic solution, dyamic simulation
+
+
+'   **************************************************************************************************************************************************
+
+'Create alternate scenarios / shocks to model parameters (size: 1% of GDP)
+
+
+'Shock to taxes on UC households
+superecom2.scenario "Scenario 1"
+superecom2.override tau_p
+copy tau_p tau_p_1 
+smpl 2020 @last
+tau_p_1 = 0.13 'from 0.14
+smpl 2010 @last
+superecom2.solve
+
+'Shock to taxes on LC households
+superecom2.scenario(n) "Scenario 2"
+superecom2.override tau_w
+copy tau_w tau_w_2
+smpl 2020 @last
+tau_w_2 = 0.13 'from 0.14
+smpl 2010 @last
+superecom2.solve
+
+'Shock to taxes on green consumption 
+superecom2.scenario(n) "scenario 3"
+superecom2.override vatrate_gr
+copy vatrate_gr vatrate_gr_3
+smpl 2020 @last
+vatrate_gr_3 = 0 'from 0.02
+smpl 2010 @last
+superecom2.solve
+
+'Shock to ROUTINE government spending
+superecom2.scenario(n) "Scenario 4"
+superecom2.override g_gv_rout
+copy g_gv_rout g_gv_rout_4
+smpl 2020 @last
+g_gv_rout_4 = 0.05 'from 0.035
+smpl 2010 @last
+superecom2.solve
+
+'Shock to Government MOIS
+superecom2.scenario(n) "scenario 5"
+superecom2.override g_gv_mois 
+copy g_gv_mois g_gv_mois_5
+smpl 2020 @last
+g_gv_mois_5 = 0.05 'from 0.035
+smpl 2010 @last
+superecom2.solve
+
+'Shock to Government GREEN MOIS
+superecom2.scenario(n) "scenario 6"
+superecom2.override g_gv_mois alpha
+copy g_gv_mois g_gv_mois_6
+copy alpha alpha_6
+smpl 2020 @last
+g_gv_mois_6 = 0.05 'from 0.035
+alpha_6 = 0.73 'from 0.44
+smpl 2010 @last
+superecom2.solve
+
+'Shock to Government GREEN MOIS 'funded' by higher taxes on UC households
+superecom2.scenario(n) "scenario 7"
+superecom2.override g_gv_mois tau_p alpha
+copy g_gv_mois g_gv_mois_7
+copy tau_p tau_p_7
+copy alpha alpha_7
+smpl 2020 @last
+tau_p_7 = 0.15 'from 0.14 
+g_gv_mois_7 = 0.05 'from 0.035
+alpha_7 = 0.73 'from 0.44
+smpl 2010 @last
+superecom2.solve
+
+'Shock to Government GREEN MOIS 'funded' by higher taxes on brown consumption 
+superecom2.scenario(n) "scenario 8"
+superecom2.override vatrate_c g_gv_mois alpha
+copy vatrate_c vatrate_c_8
+copy g_gv_mois g_gv_mois_8
+copy alpha alpha_8
+smpl 2020 @last  
+vatrate_c_8 = 0.021 'from 0.02
+g_gv_mois_8 = 0.05 'from 0.035
+alpha_8 = 0.73 'from 0.44
+smpl 2010 @last
+superecom2.solve
+
+'Shock to Government GREEN MOIS 'funded' by carbon tax    
+superecom2.scenario(n) "scenario 9"
+superecom2.override tau_f g_gv_mois alpha
+copy tau_f tau_f_9
+copy g_gv_mois g_gv_mois_9
+copy alpha alpha_9
+smpl 2020 @last  
+tau_f_9 = 0.03 'from 0
+g_gv_mois_9 = 0.05 'from 0.035
+alpha_9 = 0.73 'from 0.44
+smpl 2010 @last
+superecom2.solve
+
+
+'   **************************************************************************************************************************************************
+
+'Create figures
+
+'Create consistency check chart
+smpl 2010 2030
+graph check1.line (b_cb_0+adv_s_0-(hb_s_0+h_s_0)) (l_s_0+hb_d_0-(adv_d_0+d_s_0)) 
+check1.axis(left) range(-3,3)
+check1.addtext(t,just(c),font(16)) (A) Check 1: Central bank BS and Banks BS
+'show check1
+
+graph check2.line h_s_0-h_d_0-0.36523 'Note: -0.36523 = correction for initial error																		
+check2.axis(left) range(-3,3)
+check2.addtext(t,just(c),font(16)) (B) Check 2: Supply of cash - Demand for cash
+'show check2
+
+'Create LC households consumption check chart
+smpl 2012 2030
+graph checkcons.line cons_w_0/cons_0
+checkcons.addtext(t,just(c),font(16)) (-) LC households consumption to total (check)
+'show checkcons
+
+' Creates the chart of GDP: short run (baseline)
+smpl 2012 2032
+graph gdp.area(s) cons_w_0 cons_p_0 i_c_0 i_gr_0 be_0 gov_rout_0 gov_gr_0 gov_tech_0
+gdp.draw(shade, bottom, color(202,202,255)) 2010 2018
+gdp.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+gdp.options linepat
+gdp.axis mirror
+gdp.setelem(1) fillcolor(yellow)
+gdp.setelem(2) fillcolor(183,183,0)
+gdp.setelem(3) fillcolor(145,34,255)
+gdp.setelem(4) fillcolor(0,255,0)
+gdp.setelem(5) fillcolor(190,125,255)
+gdp.setelem(6) fillcolor(orange) 
+gdp.setelem(7) fillcolor(220,255,215)
+gdp.setelem(8) fillcolor(128,128,255)
+gdp.name(1) LC households consumption 
+gdp.name(2) UC households consumption
+gdp.name(3) Conventional private investment
+gdp.name(4) Green private investment
+gdp.name(5) Non-green business innovation 
+gdp.name(6) Government conventional spending
+gdp.name(7) Government green spending
+gdp.name(8) Government non-green innovation spending
+gdp.addtext(t,just(c),font(24)) (a) Output composition: short run \n (trillion USD, constant prices, baseline)
+'show gdp
+
+' Creates the chart of GDP: long run (baseline)
+smpl 2012 2100 
+graph gdpl.line cons_w_0 cons_p_0 i_c_0 i_gr_0 be_0 gov_rout_0 gov_gr_0 gov_tech_0
+gdpl.draw(shade, bottom, color(202,202,255)) 2010 2018
+gdpl.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+gdpl.options linepat
+gdpl.axis mirror
+gdpl.setelem(1) lcolor(255,210,0) lwidth(2) lpat(1)
+gdpl.setelem(2) lcolor(183,183,0) lwidth(2) lpat(2)
+gdpl.setelem(3) lcolor(145,34,255) lwidth(2) lpat(3)
+gdpl.setelem(4) lcolor(0,196,0) lwidth(2) lpat(4)
+gdpl.setelem(5) lcolor(190,125,255) lwidth(2) lpat(5)
+gdpl.setelem(6) lcolor(orange) lwidth(2) lpat(6)
+gdpl.setelem(7) lcolor(0,255,0) lwidth(2) lpat(7)
+gdpl.setelem(8) lcolor(128,128,255) lwidth(2) lpat(8)
+gdpl.name(1) LC households consumption 
+gdpl.name(2) UC households consumption
+gdpl.name(3) Conventional private investment
+gdpl.name(4) Green private investment
+gdpl.name(5) Non-green business innovation 
+gdpl.name(6) Government conventional spending
+gdpl.name(7) Government green spending
+gdpl.name(8) Government non-green innovation spending
+gdpl.addtext(t,just(c),font(24)) (b) Demand components: long run \n (trillion USD, constant prices, baseline)
+'show gdpl
+
+' Creates the chart of Leontief function (baseline)
+smpl 2012 2100 
+graph leo.line y_leontief_0 y_f_0 y_n_0 y_m_0 y_e_0 y_0
+leo.draw(shade, bottom, color(202,202,255)) 2010 2018
+leo.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+leo.options linepat
+leo.axis overlap
+leo.setelem(4) axis(right)
+leo.setelem(5) axis(right)
+leo.setelem(1) symbol(10) symsize("XL") lcolor(black) lwidth(2) lpat(12) 
+leo.setelem(2) lcolor(orange) lwidth(2) lpat(2) 
+leo.setelem(3) lcolor(red) lwidth(2) lpat(2) 
+leo.setelem(4) lcolor(purple) lwidth(2) lpat(3) 
+leo.setelem(5) lcolor(blue) lwidth(2) lpat(3) 
+leo.setelem(6) symbol(1) symsize("XL") lcolor(green) lwidth(2) lpat(12) 
+leo.name(1) Leontief function 
+leo.name(2) Capital-constrained
+leo.name(3) Labour-constrained
+leo.name(4) Matter-constrained (right axis)
+leo.name(5) Energy-constrained (right axis)
+leo.name(6) Actual output
+leo.addtext(t,just(c),font(24)) (e) Potential output (trillion USD, constant prices, baseline)
+'show leo
+
+' Creates the chart of emissions (baseline)
+smpl 2012 2100 
+graph emiss.area(s) emis_l_0 emis_in_0
+emiss.draw(shade, bottom, color(202,202,255)) 2010 2018
+emiss.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+emiss.options linepat
+emiss.axis mirror
+emiss.setelem(1) fillcolor(orange)
+emiss.setelem(2) fillcolor(183,183,0)
+emiss.name(1) Land emissions 
+emiss.name(2) Industrial emissions
+emiss.addtext(t,just(c),font(24)) (i) Annual emissions of CO2 (billion tonnes CO2 per year)
+'show emiss
+
+' Creates the chart of temperature (baseline)
+smpl 2012 2100 
+graph temp.line temp_at_0 temp_lo_0
+temp.draw(shade, bottom, color(202,202,255)) 2010 2018
+temp.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+temp.options linepat
+temp.axis mirror
+temp.setelem(1) lcolor(purple) lwidth(2) lpat(1) 
+temp.setelem(2) lcolor(orange) lwidth(2) lpat(1) 
+temp.name(1) Atmosperic temperature 
+temp.name(2) Lower ocean temperature 
+temp.addtext(t,just(c),font(24)) (j) Temperature (C, difference with pre-industrial levels)
+'show temp
+
+' Creates the chart of inequality (baseline)
+smpl 2012 2100 
+graph inequal.line yd_p_0/yd_0 omega_0 nw_p_0/nw_0 
+inequal.draw(shade, bottom, color(202,202,255)) 2010 2018
+inequal.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+inequal.options linepat
+inequal.axis mirror
+inequal.setelem(1) lcolor(blue) lwidth(2) lpat(1) 
+inequal.setelem(2) lcolor(black) lwidth(2) lpat(2) 
+inequal.setelem(3) lcolor(red) lwidth(2) lpat(1) 
+inequal.name(1) Disposable income of UC households to total disposable income (flow)
+inequal.name(2) Wage share to total income
+inequal.name(3) Net wealth of UC households to total net wealth (stock) 
+inequal.addtext(t,just(c),font(24)) (c) Inequality indices
+'show inequal
+
+' Creates the chart of (un)employment rate (baseline)
+smpl 2012 2100 
+graph emp.line e_rate_0 u_rate_0 hours_0
+emp.draw(shade, bottom, color(202,202,255)) 2010 2018
+emp.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+emp.options linepat 
+emp.axis overlap
+emp.axis(left) range(0,1)
+emp.setelem(3) axis(right) 
+emp.setelem(1) lcolor(purple) lwidth(2) lpat(1) 
+emp.setelem(2) lcolor(orange) lwidth(2) lpat(1) 
+emp.setelem(3) lcolor(red) lwidth(2) lpat(2) 
+emp.name(1) Employment rate
+emp.name(2) Unemployment rate
+emp.name(3) Annual hours worked (right axis)
+emp.addtext(t,just(c),font(24)) (d) Employment, unemployment and working day
+'show emp
+
+' Creates the chart of deficit and debt (baseline)
+smpl 2012 2100 
+graph deb.line (gdef_0*100)/y_0 (gdeb_0*100)/y_0
+deb.draw(shade, bottom, color(202,202,255)) 2010 2018
+deb.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+deb.options linepat 
+deb.axis overlap
+deb.setelem(2) axis(right) 
+deb.setelem(1) lcolor(black) lwidth(2) lpat(1) 
+deb.setelem(2) lcolor(red) lwidth(2) lpat(1) 
+deb.name(1) Government deficit
+deb.name(2) Stock of debt (right axis)
+deb.addtext(t,just(c),font(24)) (t) Government balance (% of GDP, baseline)
+'show deb
+
+' Creates chart of private profit (baseline)
+smpl 2012 2100 '2075
+group group1 f_f_0 f_b_0 (f_f_0+f_b_0)
+freeze(prof) group1.mixed line(1,2) bar(3)
+prof.draw(shade, bottom, color(202,202,255)) 2010 2018
+prof.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+prof.setelem(3) axis(right) 
+prof.setelem(1) lcolor(blue) lwidth(2) lpat(1) 
+prof.setelem(2) lcolor(red) lwidth(2) lpat(1) 
+prof.name(1) Productive firms
+prof.name(2) Banks and intermediaries
+prof.name(3) Net total profits (right axis)
+prof.addtext(t,just(c),font(24)) (h) Annual profits (trillion USD, constant prices, baseline)
+'show prof
+
+' Creates the chart of UC households and LC households portfolio composition
+smpl 2019 2022
+graph por.pie h_p_0 d_p_0 b_d_0 ee_d_0 h_w_0 d_w_0
+por.options gridl gridb gridauto frameaxes("none")
+por.name(1) Cash (UC households)
+por.name(2) Banks deposits (UC households)
+por.name(3) Treasury bills (UC households)
+por.name(4) Equity & shares (UC households)
+por.name(5) Cash (LC households)
+por.name(6) Banks deposits (LC households)
+por.axis(left) 
+por.addtext(t,just(c),font(24)) (q) Portfolio composition of households (2019-2022)
+por.legend -inbox 
+'show por
+
+' Creates the chart of damages (baseline)
+smpl 2012 2100
+graph dam.line d_tp_0 d_tf_0
+dam.draw(shade, bottom, color(202,202,255)) 2010 2018
+dam.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+dam.options linepat 
+dam.axis mirror
+dam.setelem(1) lcolor(black) lwidth(2) lpat(1) 
+dam.setelem(2) lcolor(red) lwidth(2) lpat(1) 
+dam.name(1) Damages to productivity
+dam.name(2) Damages to fund
+dam.addtext(t,just(c),font(24)) (k) Percentage of damages due to global warming
+'show dam
+
+' Creates the chart of utilisation rates (baseline)
+smpl 2012 2100
+graph util.line u_0 u_n u_m_0 u_e_0
+util.draw(shade, bottom, color(202,202,255)) 2010 2018
+util.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+util.options linepat 
+util.axis overlap
+util.setelem(3) axis(right) 
+util.setelem(4) axis(right) 
+util.setelem(1) lcolor(black) lwidth(2) lpat(1) 
+util.setelem(2) lcolor(blue) lwidth(2) lpat(2) 
+util.setelem(3) lcolor(red) lwidth(2) lpat(3) 
+util.setelem(4) lcolor(orange) lwidth(2) lpat(3) 
+util.name(1) Actual utilisation rate of plants
+util.name(2) Target utilisation rate of plants
+util.name(3) Utilisation rate of matter (right axis)
+util.name(4) Utilisation rate of energy (right axis)
+util.addtext(t,just(c),font(24)) (o) Utilisation rates
+'show util
+
+' Creates the chart of financial variables
+smpl 2012 2100
+graph fin.line lev_0 q_0 pe_0 bur_0
+fin.draw(shade, bottom, color(202,202,255)) 2010 2018
+fin.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+fin.options linepat
+fin.axis overlap
+fin.setelem(3) axis(right)
+fin.setelem(1) lcolor(blue) lwidth(2) lpat(1) 
+fin.setelem(2) lcolor(orange) lwidth(2) lpat(2) 
+fin.setelem(3) lcolor(red) lwidth(2) lpat(3) 
+fin.setelem(4) lcolor(purple) lwidth(2) lpat(4) 
+fin.name(1) Leverage ratio of firms
+fin.name(2) Tobin q
+fin.name(3) Price-earnings ratio (right axis)
+fin.name(4) Burden of personal debt 
+fin.addtext(t,just(c),font(24)) (r) Selected financial ratios
+'show fin
+
+' Creates the chart of prices 
+smpl 2012 2100 '2075
+graph price.line p_0 p_y_0 p_m_0 p_en_0 p_e_0
+price.draw(shade, bottom, color(202,202,255)) 2010 2018
+price.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+price.options linepat
+price.axis overlap
+price.setelem(4) axis(right)
+price.setelem(1) lcolor(blue) lwidth(2) lpat(1) 
+price.setelem(2) lcolor(green) lwidth(2) lpat(5) 
+price.setelem(3) lcolor(orange) lwidth(2) lpat(2) 
+price.setelem(4) lcolor(red) lwidth(2) lpat(3) 
+price.setelem(5) lcolor(purple) lwidth(2) lpat(4) 
+price.name(1) General price level 
+price.name(2) Unit price of production
+price.name(3) Unit price of matter
+price.name(4) Unit price of non-renewable energy
+price.name(5) Price of equity & shares (right axis) 
+price.addtext(t,just(c),font(24)) (g) Prices
+'show price
+
+' Creates the chart of interest rates
+smpl 2012 2100 
+graph rate.line r_d r_l r_b_0 r_e_0
+rate.draw(shade, bottom, color(202,202,255)) 2010 2018
+rate.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+rate.options linepat
+rate.axis overlap
+rate.setelem(4) axis(right)
+rate.axis(left) range(-0.01,0.14)
+rate.setelem(1) lcolor(blue) lwidth(2) lpat(1) 
+rate.setelem(2) lcolor(orange) lwidth(2) lpat(2) 
+rate.setelem(3) lcolor(red) lwidth(2) lpat(3) 
+rate.setelem(4) lcolor(purple) lwidth(2) lpat(4) 
+rate.name(1) Bank deposits 
+rate.name(2) Loans
+rate.name(3) Treasury bills
+rate.name(4) Equity & shares (righ axis)
+rate.addtext(t,just(c),font(24)) (s) Interest rates
+'show rate
+
+' Creates the chart of socio-economic stock
+smpl 2012 2100
+graph ses.line k_se_0 mat_0 rec_0 des_0
+ses.draw(shade, bottom, color(202,202,255)) 2010 2018
+ses.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+ses.options linepat
+ses.axis overlap
+ses.setelem(1) axis(right)
+ses.setelem(1) lcolor(blue) lwidth(2) lpat(1) 
+ses.setelem(2) lcolor(orange) lwidth(2) lpat(2) 
+ses.setelem(3) lcolor(red) lwidth(2) lpat(3) 
+ses.setelem(4) lcolor(purple) lwidth(2) lpat(3) 
+ses.name(1) Socio-economic stock (righ axis)
+ses.name(2) Extraction of matter
+ses.name(3) Recycled socio-economic stock
+ses.name(4) Destruction of socio-economic stock
+ses.addtext(t,just(c),font(24)) (p) Socio-economic stock components (Gt)
+'show ses
+
+' Creates the chart of waste
+smpl 2012 2100 
+graph waste.line wa_0 hws_0 haz_ratio_0
+waste.draw(shade, bottom, color(202,202,255)) 2010 2018
+waste.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+waste.options linepat
+waste.axis overlap
+waste.setelem(3) axis(right)
+waste.setelem(1) lcolor(blue) lwidth(2) lpat(1) 
+waste.setelem(2) lcolor(orange) lwidth(2) lpat(1) 
+waste.setelem(3) lcolor(red) lwidth(2) lpat(2) 
+waste.name(1) Waste (right axis)
+waste.name(2) Hazardous waste (right axis)
+waste.name(3) Hazardous waste ratio (Gt/Km^2)
+waste.addtext(t,just(c),font(24)) (l) Waste (Gt/million km^2)
+'show waste
+
+' Creates the chart of energy
+smpl 2012 2100
+graph ener.line e_0 er_0 en_0 ed_0
+ener.draw(shade, bottom, color(202,202,255)) 2010 2018
+ener.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+ener.options linepat
+ener.axis overlap
+ener.setelem(1) axis(right)
+ener.setelem(1) lcolor(blue) lwidth(2) lpat(1) 
+ener.setelem(2) lcolor(orange) lwidth(2) lpat(2) 
+ener.setelem(3) lcolor(red) lwidth(2) lpat(3) 
+ener.setelem(4) lcolor(purple) lwidth(2) lpat(4) 
+ener.name(1) Total energy required for production
+ener.name(2) Renewable energy at the end of the period
+ener.name(3) Non-renewable energy
+ener.name(4) Dissipated energy at the end of the period
+ener.addtext(t,just(c),font(24)) (l) Energy sources (Ej)
+'show ener
+
+' Creates the chart of ecological efficiency
+smpl 2012 2100 
+graph eff.line mu_0 epsilon_0 beta_0 eta_e_0 
+eff.draw(shade, bottom, color(202,202,255)) 2010 2018
+eff.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+eff.options linepat
+eff.axis overlap
+eff.setelem(2) axis(right)
+eff.setelem(1) lcolor(blue) lwidth(2) lpat(1) 
+eff.setelem(2) lcolor(orange) lwidth(2) lpat(2) 
+eff.setelem(3) lcolor(red) lwidth(2) lpat(3) 
+eff.setelem(4) lcolor(purple) lwidth(2) lpat(4) 
+eff.name(1) Matter-intensity (Kg/trillion USD)
+eff.name(2) Energy-intensity (Ej/trillion USD) (right axis)
+eff.name(3) CO2-intensity (Gt/Ej)
+eff.name(4) Share of renewable energy
+eff.addtext(t,just(c),font(24)) (m) Ecological efficiency ratios 
+'show eff
+
+' Creates the chart of depletion ratios
+smpl 2012 2100 
+graph depl.line rho_m_0 rho_e_0
+depl.draw(shade, bottom, color(202,202,255)) 2010 2018
+depl.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+depl.options linepat
+depl.axis mirror
+depl.setelem(1) lcolor(blue) lwidth(2) lpat(2) 
+depl.setelem(2) lcolor(orange) lwidth(2) lpat(3) 
+depl.name(1) Matter
+depl.name(2) Non-renewable energy
+depl.addtext(t,just(c),font(24)) (n) Depletion ratios
+'show depl
+
+' Creates the chart of productivities
+smpl 2012 2100 
+graph prod.line a_f_0 a_n_0
+prod.draw(shade, bottom, color(202,202,255)) 2010 2018
+prod.draw(line,bottom, top,color(black),width(1),pattern(2)) 2018 
+prod.options linepat
+prod.axis overlap
+prod.setelem(2) axis(right)
+prod.setelem(1) lcolor(blue) lwidth(2) lpat(2) 
+prod.setelem(2) lcolor(orange) lwidth(2) lpat(3) 
+prod.name(1) Product per unit of capital
+prod.name(2) Product per unit of labour (right axis)
+prod.addtext(t,just(c),font(24)) (f) Productivity indices
+'show prod
+
+'   **************************************************************************************************************************************************
+
+'Create charts of experiments
+
+'A) Impact of fiscal policies on economy (gdp, price level, interest rates, deficit)
+
+' Creates the chart of GDP: shocks 
+smpl 2018 2050
+graph fig1.line y_1/y_0 y_2/y_0 y_3/y_0 y_4/y_0 y_5/y_0 y_6/y_0 y_7/y_0 y_8/y_0 y_9/y_0
+fig1.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig1.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020
+fig1.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig1.draw(line,left, top,color(black),width(1),pattern(2)) 1 
+fig1.options linepat
+fig1.axis mirror
+fig1.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig1.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig1.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig1.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig1.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig1.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig1.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig1.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig1.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig1.name(1) Tax cut for the UC households 
+fig1.name(2) Tax cut for the LC households
+fig1.name(3) VAT cut on green consumpion
+fig1.name(4) Routine spending
+fig1.name(5) Mission-oriented innovative spending (MOIS)
+fig1.name(6) Green MOIS 
+fig1.name(7) Green MOIS + higher tax rate for the UC households
+fig1.name(8) Green MOIS + selective VAT
+fig1.name(9) Green MOIS + carbon tax
+fig1.addtext(t,just(c),font(16)) (a) World output following fiscal shocks \n (relative to baseline)
+fig1.legend -display
+'show fig1
+
+' Creates the chart of price level: shocks 
+smpl 2018 2050
+graph fig2.line p_1/p_0 p_2/p_0 p_3/p_0 p_4/p_0 p_5/p_0 p_6/p_0 p_7/p_0 p_8/p_0 p_9/p_0
+fig2.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig2.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig2.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig2.draw(line,left, top,color(black),width(1),pattern(2)) 1 
+fig2.options linepat
+fig2.axis mirror
+fig2.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig2.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig2.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig2.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig2.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig2.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig2.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig2.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig2.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig2.name(1) Tax cut for the UC households 
+fig2.name(2) Tax cut for the LC households
+fig2.name(3) VAT cut on green consumpion
+fig2.name(4) Routine spending
+fig2.name(5) Mission-oriented innovative spending (MOIS)
+fig2.name(6) Green MOIS 
+fig2.name(7) Green MOIS + higher tax rate for the UC households
+fig2.name(8) Green MOIS + selective VAT
+fig2.name(9) Green MOIS + carbon tax
+fig2.addtext(t,just(c),font(16)) (b) Price level following fiscal shocks \n (relative to baseline)
+fig2.legend -display
+'show fig2
+
+' Creates the chart of interest rates: shocks 
+smpl 2018 2050
+graph fig3.line r_b_1-r_b_0 r_b_2-r_b_0 r_b_3-r_b_0 r_b_4-r_b_0 r_b_5-r_b_0 r_b_6-r_b_0 r_b_7-r_b_0 r_b_8-r_b_0 r_b_9-r_b_0
+fig3.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig3.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig3.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig3.draw(line,left, top,color(black),width(1),pattern(2)) 0 
+fig3.options linepat
+fig3.axis mirror
+fig3.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig3.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig3.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig3.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig3.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig3.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig3.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig3.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig3.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig3.name(1) Tax cut for the UC households 
+fig3.name(2) Tax cut for the LC households
+fig3.name(3) VAT cut on green consumpion
+fig3.name(4) Routine spending
+fig3.name(5) Mission-oriented innovative spending (MOIS)
+fig3.name(6) Green MOIS 
+fig3.name(7) Green MOIS + higher tax rate for the UC households
+fig3.name(8) Green MOIS + selective VAT
+fig3.name(9) Green MOIS + carbon tax
+fig3.addtext(t,just(c),font(16)) (c) T-bills interest rate following fiscal shocks \n (difference with baseline)
+fig3.legend position(bl)
+'show fig3
+
+' Creates the chart of government deficit: shocks 
+smpl 2018 2050
+graph fig4.line (gdef_1/y_1)-(gdef_0/y_0) (gdef_2/y_2)-(gdef_0/y_0) (gdef_3/y_3)-(gdef_0/y_0) (gdef_4/y_4)-(gdef_0/y_0) (gdef_5/y_5)-(gdef_0/y_0) (gdef_6/y_6)-(gdef_0/y_0) (gdef_7/y_7)-(gdef_0/y_0) (gdef_8/y_8)-(gdef_0/y_0) (gdef_9/y_9)-(gdef_0/y_0)
+fig4.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig4.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig4.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig4.draw(line,left, top,color(black),width(1),pattern(2)) 0 
+fig4.options linepat
+fig4.axis mirror
+fig4.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig4.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig4.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig4.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig4.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig4.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig4.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig4.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig4.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig4.name(1) Tax cut for the UC households 
+fig4.name(2) Tax cut for the LC households
+fig4.name(3) VAT cut on green consumpion
+fig4.name(4) Routine spending
+fig4.name(5) Mission-oriented innovative spending (MOIS)
+fig4.name(6) Green MOIS 
+fig4.name(7) Green MOIS + higher tax rate for the UC households
+fig4.name(8) Green MOIS + selective VAT
+fig4.name(9) Green MOIS + carbon tax
+fig4.addtext(t,just(c),font(16)) (d) Goverment deficit to GDP rate following fiscal shocks \n (%, difference with baseline)
+fig4.legend -display
+'show fig4
+
+'B) Impact of fiscal policies on population (labour force, employment, income inequality, wealth inequality)
+
+' Creates the chart of population: shocks 
+smpl 2018 2050
+graph fig5.line lf_1/lf_0 lf_2/lf_0 lf_3/lf_0 lf_4/lf_0 lf_5/lf_0 lf_6/lf_0 lf_7/lf_0 lf_8/lf_0 lf_9/lf_0
+fig5.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig5.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig5.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig5.draw(line,left, top,color(black),width(1),pattern(2)) 1 
+fig5.options linepat
+fig5.axis mirror
+fig5.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig5.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig5.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig5.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig5.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig5.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig5.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig5.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig5.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig5.name(1) Tax cut for the UC households 
+fig5.name(2) Tax cut for the LC households
+fig5.name(3) VAT cut on green consumpion
+fig5.name(4) Routine spending
+fig5.name(5) Mission-oriented innovative spending (MOIS)
+fig5.name(6) Green MOIS 
+fig5.name(7) Green MOIS + higher tax rate for the UC households
+fig5.name(8) Green MOIS + selective VAT
+fig5.name(9) Green MOIS + carbon tax
+fig5.addtext(t,just(c),font(16)) (a) Labour force following fiscal shocks \n (relative to baseline)
+fig5.legend -display
+'show fig5
+
+' Creates the chart of unemployment rate : shocks
+smpl 2018 2050
+graph fig6.line u_rate_1-u_rate_0 u_rate_2-u_rate_0 u_rate_3-u_rate_0 u_rate_4-u_rate_0 u_rate_5-u_rate_0 u_rate_6-u_rate_0 u_rate_7-u_rate_0 u_rate_8-u_rate_0 u_rate_9-u_rate_0
+fig6.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig6.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig6.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig6.draw(line,left, top,color(black),width(1),pattern(2)) 0 
+fig6.options linepat
+fig6.axis mirror
+fig6.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig6.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig6.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig6.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig6.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig6.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig6.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig6.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig6.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig6.name(1) Tax cut for the UC households 
+fig6.name(2) Tax cut for the LC households
+fig6.name(3) VAT cut on green consumpion
+fig6.name(4) Routine spending
+fig6.name(5) Mission-oriented innovative spending (MOIS)
+fig6.name(6) Green MOIS 
+fig6.name(7) Green MOIS + higher tax rate for the UC households
+fig6.name(8) Green MOIS + selective VAT
+fig6.name(9) Green MOIS + carbon tax
+fig6.addtext(t,just(c),font(16)) (b) Unemployment rate following fiscal shocks \n (%, difference with baseline)
+fig6.legend -display
+'show fig6
+
+' Creates the chart of income inequality: shocks 
+smpl 2018 2050
+graph fig7.line (yd_p_hs_1/yd_w_1)-(yd_p_hs_0/yd_w_0) (yd_p_hs_2/yd_w_2)-(yd_p_hs_0/yd_w_0) (yd_p_hs_3/yd_w_3)-(yd_p_hs_0/yd_w_0) (yd_p_hs_4/yd_w_4)-(yd_p_hs_0/yd_w_0) (yd_p_hs_5/yd_w_5)-(yd_p_hs_0/yd_w_0) (yd_p_hs_6/yd_w_6)-(yd_p_hs_0/yd_w_0) (yd_p_hs_7/yd_w_7)-(yd_p_hs_0/yd_w_0) (yd_p_hs_8/yd_w_8)-(yd_p_hs_0/yd_w_0) (yd_p_hs_9/yd_w_9)-(yd_p_hs_0/yd_w_0)
+fig7.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig7.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig7.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig7.draw(line,left, top,color(black),width(1),pattern(2)) 0
+fig7.options linepat
+fig7.axis mirror
+fig7.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig7.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig7.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig7.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig7.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig7.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig7.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig7.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig7.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig7.name(1) Tax cut for the UC households 
+fig7.name(2) Tax cut for the LC households
+fig7.name(3) VAT cut on green consumpion
+fig7.name(4) Routine spending
+fig7.name(5) Mission-oriented innovative spending (MOIS)
+fig7.name(6) Green MOIS 
+fig7.name(7) Green MOIS + higher tax rate for the UC households
+fig7.name(8) Green MOIS + selective VAT
+fig7.name(9) Green MOIS + carbon tax
+fig7.addtext(t,just(c),font(16)) (c) Income inequality following fiscal shocks \n (difference with baseline)
+fig7.legend position(bl)
+'show fig7
+
+' Creates the chart of wealth inequality: shocks 
+smpl 2018 2050
+graph fig8.line (nw_p_1/nw_w_1)-(nw_p_0/nw_w_0) (nw_p_2/nw_w_2)-(nw_p_0/nw_w_0) (nw_p_3/nw_w_3)-(nw_p_0/nw_w_0) (nw_p_4/nw_w_4)-(nw_p_0/nw_w_0) (nw_p_5/nw_w_5)-(nw_p_0/nw_w_0) (nw_p_6/nw_w_6)-(nw_p_0/nw_w_0) (nw_p_7/nw_w_7)-(nw_p_0/nw_w_0) (nw_p_8/nw_w_8)-(nw_p_0/nw_w_0) (nw_p_9/nw_w_9)-(nw_p_0/nw_w_0)
+fig8.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig8.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig8.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig8.draw(line,left, top,color(black),width(1),pattern(2)) 0 
+fig8.options linepat
+fig8.axis mirror
+fig8.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig8.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig8.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig8.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig8.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig8.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig8.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig8.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig8.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig8.name(1) Tax cut for the UC households 
+fig8.name(2) Tax cut for the LC households
+fig8.name(3) VAT cut on green consumpion
+fig8.name(4) Routine spending
+fig8.name(5) Mission-oriented innovative spending (MOIS)
+fig8.name(6) Green MOIS 
+fig8.name(7) Green MOIS + higher tax rate for the UC households
+fig8.name(8) Green MOIS + selective VAT
+fig8.name(9) Green MOIS + carbon tax
+fig8.addtext(t,just(c),font(16)) (d) Wealth inequality following fiscal shocks \n (difference with baseline)
+fig8.legend -display
+'show fig8
+
+'C) Impact of fiscal policies on finance (tobin q, leverage, return on equity, debt burden)
+
+' Creates the chart of Tobin q: shocks 
+smpl 2018 2050
+graph fig9.line q_1-q_0 q_2-q_0 q_3-q_0 q_4-q_0 q_5-q_0 q_6-q_0 q_7-q_0 q_8-q_0 q_9-q_0
+fig9.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig9.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig9.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig9.draw(line,left, top,color(black),width(1),pattern(2)) 0 
+fig9.options linepat
+fig9.axis mirror
+fig9.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig9.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig9.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig9.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig9.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig9.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig9.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig9.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig9.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig9.name(1) Tax cut for the UC households 
+fig9.name(2) Tax cut for the LC households
+fig9.name(3) VAT cut on green consumpion
+fig9.name(4) Routine spending
+fig9.name(5) Mission-oriented innovative spending (MOIS)
+fig9.name(6) Green MOIS 
+fig9.name(7) Green MOIS + higher tax rate for the UC households
+fig9.name(8) Green MOIS + selective VAT
+fig9.name(9) Green MOIS + carbon tax
+fig9.addtext(t,just(c),font(16)) (a) Tobin q following fiscal shocks \n (difference with baseline)
+fig9.legend -display
+'show fig9
+
+' Creates the chart of leverage: shocks 
+smpl 2018 2050
+graph fig10.line lev_1-lev_0 lev_2-lev_0 lev_3-lev_0 lev_4-lev_0 lev_5-lev_0 lev_6-lev_0 lev_7-lev_0 lev_8-lev_0 lev_9-lev_0
+fig10.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig10.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig10.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig10.draw(line,left, top,color(black),width(1),pattern(2)) 0 
+fig10.options linepat
+fig10.axis mirror
+fig10.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig10.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig10.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig10.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig10.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig10.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig10.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig10.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig10.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig10.name(1) Tax cut for the UC households 
+fig10.name(2) Tax cut for the LC households
+fig10.name(3) VAT cut on green consumpion
+fig10.name(4) Routine spending
+fig10.name(5) Mission-oriented innovative spending (MOIS)
+fig10.name(6) Green MOIS 
+fig10.name(7) Green MOIS + higher tax rate for the UC households
+fig10.name(8) Green MOIS + selective VAT
+fig10.name(9) Green MOIS + carbon tax
+fig10.addtext(t,just(c),font(16)) (b) Firms leverage ratio following fiscal shocks \n (difference with baseline)
+fig10.legend -display
+'show fig10
+
+' Creates the chart of ROE: shocks 
+smpl 2018 2050
+graph fig11.line r_e_1-r_e_0 r_e_2-r_e_0 r_e_3-r_e_0 r_e_4-r_e_0 r_e_5-r_e_0 r_e_6-r_e_0 r_e_7-r_e_0 r_e_8-r_e_0 r_e_9-r_e_0
+fig11.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig11.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig11.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig11.draw(line,left, top,color(black),width(1),pattern(2)) 0 
+fig11.options linepat
+fig11.axis mirror
+fig11.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig11.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig11.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig11.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig11.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig11.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig11.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig11.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig11.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig11.name(1) Tax cut for the UC households 
+fig11.name(2) Tax cut for the LC households
+fig11.name(3) VAT cut on green consumpion
+fig11.name(4) Routine spending
+fig11.name(5) Mission-oriented innovative spending (MOIS)
+fig11.name(6) Green MOIS 
+fig11.name(7) Green MOIS + higher tax rate for the UC households
+fig11.name(8) Green MOIS + selective VAT
+fig11.name(9) Green MOIS + carbon tax
+fig11.addtext(t,just(c),font(16)) (c) Return on equity & shares following fiscal shocks \n (difference with baseline)
+fig11.legend position(bl)
+'show fig11
+
+' Creates the chart of debt burden: shocks 
+smpl 2018 2050
+graph fig12.line bur_1-bur_0 bur_2-bur_0 bur_3-bur_0 bur_4-bur_0 bur_5-bur_0 bur_6-bur_0 bur_7-bur_0 bur_8-bur_0 bur_9-bur_0
+fig12.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig12.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig12.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig12.draw(line,left, top,color(black),width(1),pattern(2)) 0 
+fig12.options linepat
+fig12.axis mirror
+fig12.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig12.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig12.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig12.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig12.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig12.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig12.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig12.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig12.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig12.name(1) Tax cut for the UC households 
+fig12.name(2) Tax cut for the LC households
+fig12.name(3) VAT cut on green consumpion
+fig12.name(4) Routine spending
+fig12.name(5) Mission-oriented innovative spending (MOIS)
+fig12.name(6) Green MOIS 
+fig12.name(7) Green MOIS + higher tax rate for the UC households
+fig12.name(8) Green MOIS + selective VAT
+fig12.name(9) Green MOIS + carbon tax
+fig12.addtext(t,just(c),font(16)) (d) Households debt burden following fiscal shocks \n (difference with baseline)
+fig12.legend -display
+'show fig12
+
+'D) Impact of fiscal policies on ecosystem (emissions, temperature, ecological efficienty, depletion rates)
+
+' Creates the chart of emissions: shocks 
+smpl 2018 2050
+graph fig13.line emis_1/emis_0 emis_2/emis_0 emis_3/emis_0 emis_4/emis_0 emis_5/emis_0 emis_6/emis_0 emis_7/emis_0 emis_8/emis_0 emis_9/emis_0
+fig13.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig13.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig13.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig13.draw(line,left, top,color(black),width(1),pattern(2)) 1 
+fig13.options linepat
+fig13.axis mirror
+fig13.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig13.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig13.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig13.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig13.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig13.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig13.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig13.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig13.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig13.name(1) Tax cut for the UC households 
+fig13.name(2) Tax cut for the LC households
+fig13.name(3) VAT cut on green consumpion
+fig13.name(4) Routine spending
+fig13.name(5) Mission-oriented innovative spending (MOIS)
+fig13.name(6) Green MOIS 
+fig13.name(7) Green MOIS + higher tax rate for the UC households
+fig13.name(8) Green MOIS + selective VAT
+fig13.name(9) Green MOIS + carbon tax
+fig13.addtext(t,just(c),font(16)) (a) CO2 emissions following fiscal shocks \n (relative to baseline)
+fig13.legend -display
+'show fig13
+
+' Creates the chart of at. temperature: shocks 
+smpl 2018 2050
+graph fig14.line temp_at_1-temp_at_0 temp_at_2-temp_at_0 temp_at_3-temp_at_0 temp_at_4-temp_at_0 temp_at_5-temp_at_0 temp_at_6-temp_at_0 temp_at_7-temp_at_0 temp_at_8-temp_at_0 temp_at_9-temp_at_0
+fig14.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig14.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig14.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig14.draw(line,left, top,color(black),width(1),pattern(2)) 0 
+fig14.options linepat
+fig14.axis mirror
+fig14.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig14.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig14.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig14.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig14.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig14.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig14.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig14.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig14.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig14.name(1) Tax cut for the UC households 
+fig14.name(2) Tax cut for the LC households
+fig14.name(3) VAT cut on green consumpion
+fig14.name(4) Routine spending
+fig14.name(5) Mission-oriented innovative spending (MOIS)
+fig14.name(6) Green MOIS 
+fig14.name(7) Green MOIS + higher tax rate for the UC households
+fig14.name(8) Green MOIS + selective VAT
+fig14.name(9) Green MOIS + carbon tax
+fig14.addtext(t,just(c),font(16)) (b) Atmospheric temperature following fiscal shocks \n (C, difference with baseline)
+fig14.legend -display
+'show fig14
+
+smpl 2018 2050
+graph fig15.line (beta-1)-(beta_0) (beta_2)-(beta_0) (beta_3)-(beta_0) (beta_4)-(beta_0) (beta_5)-(beta_0) (beta_6)-(beta_0) (beta_7)-(beta_0) (beta_8)-(beta_0) (beta_9)-(beta_0)
+fig15.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig15.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig15.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig15.draw(line,left, top,color(black),width(1),pattern(2)) 0 
+fig15.options linepat
+fig15.axis mirror
+fig15.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig15.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig15.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig15.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig15.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig15.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig15.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig15.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig15.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig15.name(1) Tax cut for the UC households 
+fig15.name(2) Tax cut for the LC households
+fig15.name(3) VAT cut on green consumpion
+fig15.name(4) Routine spending
+fig15.name(5) Mission-oriented innovative spending (MOIS)
+fig15.name(6) Green MOIS 
+fig15.name(7) Green MOIS + higher tax rate for the UC households
+fig15.name(8) Green MOIS + selective VAT
+fig15.name(9) Green MOIS + carbon tax
+fig15.addtext(t,just(c),font(16)) (c) CO2 intensity ratio (Gt/Ej) (difference with baseline)
+fig15.legend position(bl)
+'show fig15
+
+' Creates the chart of energy depletion ratio: shocks 
+smpl 2018 2050
+graph fig16.line rho_e_1-rho_e_0 rho_e_2-rho_e_0 rho_e_3-rho_e_0 rho_e_4-rho_e_0 rho_e_5-rho_e_0 rho_e_6-rho_e_0 rho_e_7-rho_e_0 rho_e_8-rho_e_0 rho_e_9-rho_e_0
+fig16.draw(shade,bottom, color(223,223,255)) 2040 2051
+fig16.draw(shade, bottom, color(180,255,170)) 2010 2020
+fig16.draw(line,bottom, top,color(black),width(1),pattern(2)) 2020 
+fig16.draw(line,left, top,color(black),width(1),pattern(2)) 0 
+fig16.options linepat
+fig16.axis mirror
+fig16.setelem(1) lcolor(orange) lwidth(2) lpat(2)
+fig16.setelem(2) lcolor(purple) lwidth(2) lpat(3)
+fig16.setelem(3) lcolor(0,255,0) lwidth(2) lpat(9)
+fig16.setelem(4) lcolor(red) lwidth(2) lpat(4)
+fig16.setelem(5) lcolor(green) lwidth(2) lpat(5)
+fig16.setelem(6) lcolor(blue) lwidth(2) lpat(6)
+fig16.setelem(7) lcolor(19,143,236) lwidth(2) lpat(7)
+fig16.setelem(8) lcolor(225,30,191) lwidth(2) lpat(8)
+fig16.setelem(9) lcolor(0,34,34) lwidth(2) lpat(9)
+fig16.name(1) Tax cut for the UC households 
+fig16.name(2) Tax cut for the LC households
+fig16.name(3) VAT cut on green consumpion
+fig16.name(4) Routine spending
+fig16.name(5) Mission-oriented innovative spending (MOIS)
+fig16.name(6) Green MOIS 
+fig16.name(7) Green MOIS + higher tax rate for the UC households
+fig16.name(8) Green MOIS + selective VAT
+fig16.name(9) Green MOIS + carbon tax
+fig16.addtext(t,just(c),font(16)) (d) Depletion ratios of energy following fiscal shocks \n (difference with baseline)
+fig16.legend -display
+'show fig16
+
+' Additional figures
+graph fig17.line wb_1/wb_0 (r_d_1(-1)*d_w_1(-1))/(r_d_0(-1)*d_w_0(-1)) tax_w_1/tax_w_0  (r_l_1(-1)*l_w_1(-1))/(r_l_0(-1)*l_w_0(-1)) (rep*l_w_1(-1))/(rep*l_w_0(-1))
+graph fig18.line f_fd_1/f_fd_0 f_b_1/f_b_0 (r_d_1(-1)*d_p_1(-1))/(r_d_0(-1)*d_p_0(-1)) (r_b_1(-1)*b_d_1(-1))/(r_b_0(-1)*b_d_0(-1)) tax_p_1/tax_p_0
+
+
+'   **************************************************************************************************************************************************
+
+'Merge figures and print graphs
+
+graph graph0.merge check1 check2 
+graph0.legend font(16)
+graph0.axis(left) font(16)
+graph0.axis(right) font(16)
+graph0.axis(bottom) font(16)
+graph0.axis(top) font(16)
+graph0.axis ticksnone
+graph0.axis(right) ticksnone
+graph0.options gridauto 
+graph0.options fillcolor(white) backcolor(white) gridcolor(180,255,170)   
+graph0.datelabel format(yyyy) 
+graph0.align(2, 2.5, 1.5)
+graph0.legend -inbox
+'show graph0
+
+graph graph1.merge gdp gdpl inequal emp
+graph1.legend font(24)
+graph1.axis(left) font(24)
+graph1.axis(right) font(24)
+graph1.axis(bottom) font(24)
+graph1.axis(top) font(24)
+graph1.axis ticksnone
+graph1.axis(right) ticksnone
+graph1.options gridauto
+graph1.options fillcolor(white) backcolor(white) gridcolor(200,255,240)
+graph1.datelabel format(yyyy)
+graph1.align(2, 2.2, 5.2)
+graph1.legend -inbox
+show graph1
+
+graph graph2.merge leo prod price prof 
+graph2.legend font(24)
+graph2.axis(left) font(24)
+graph2.axis(right) font(24)
+graph2.axis(bottom) font(24)
+graph2.axis(top) font(24)
+graph2.axis ticksnone
+graph2.axis(right) ticksnone
+graph2.options gridauto
+graph2.options fillcolor(white) backcolor(white) gridcolor(200,255,240)
+graph2.datelabel format(yyyy)
+graph2.align(2, 2.2, 4.2)
+graph2.legend -inbox
+'show graph2
+
+graph graph3.merge emiss temp dam ener
+graph3.legend font(24)
+graph3.axis(left) font(24)
+graph3.axis(right) font(24)
+graph3.axis(bottom) font(24)
+graph3.axis(top) font(24)
+graph3.axis ticksnone
+graph3.axis(right) ticksnone
+graph3.options gridauto
+graph3.options fillcolor(white) backcolor(white) gridcolor(200,255,240)
+graph3.datelabel format(yyyy)
+graph3.align(2, 2.2, 5.2)
+graph3.legend -inbox
+'show graph3
+
+graph graph4.merge eff depl util ses
+graph4.legend font(24)
+graph4.axis(left) font(24)
+graph4.axis(right) font(24)
+graph4.axis(bottom) font(24)
+graph4.axis(top) font(24)
+graph4.axis ticksnone
+graph4.axis(right) ticksnone
+graph4.options gridauto
+graph4.options fillcolor(white) backcolor(white) gridcolor(200,255,240)
+graph4.datelabel format(yyyy)
+graph4.align(2, 2.2, 4.2)
+graph4.legend -inbox
+'show graph4
+
+graph graph5.merge por fin rate deb 
+graph5.legend font(24)
+graph5.axis(left) font(24)
+graph5.axis(right) font(24)
+graph5.axis(bottom) font(24)
+graph5.axis(top) font(24)
+graph5.axis ticksnone
+graph5.axis(right) ticksnone
+graph5.options gridauto
+graph5.options fillcolor(white) backcolor(white) gridcolor(200,255,240)
+graph5.datelabel format(yyyy)
+graph5.align(2, 2.2, 4.2)
+graph5.legend -inbox
+'show graph5
+
+graph graph6.merge fig1 fig2 fig3 fig4
+graph6.legend font(16)
+graph6.axis(left) font(16)
+graph6.axis(right) font(16)
+graph6.axis(bottom) font(16)
+graph6.axis(top) font(16)
+graph6.axis ticksnone
+graph6.axis(right) ticksnone
+graph6.options gridauto 
+graph6.options fillcolor(white) backcolor(white) gridcolor(180,255,170)   
+graph6.datelabel format(yyyy) 
+graph6.align(2, 2.5, 1.5)
+graph6.legend -inbox
+'show graph6
+
+graph graph7.merge fig5 fig6 fig7 fig8 
+graph7.legend font(16)
+graph7.axis(left) font(16)
+graph7.axis(right) font(16)
+graph7.axis(bottom) font(16)
+graph7.axis(top) font(16)
+graph7.axis ticksnone
+graph7.axis(right) ticksnone
+graph7.options gridauto 
+graph7.options fillcolor(white) backcolor(white) gridcolor(180,255,170)   
+graph7.datelabel format(yyyy) 
+graph7.align(2, 2.5, 1.5)
+graph7.legend -inbox
+'show graph7
+
+graph graph8.merge fig9 fig10 fig11 fig12 
+graph8.legend font(16)
+graph8.axis(left) font(16)
+graph8.axis(right) font(16)
+graph8.axis(bottom) font(16)
+graph8.axis(top) font(16)
+graph8.axis ticksnone
+graph8.axis(right) ticksnone
+graph8.options gridauto 
+graph8.options fillcolor(white) backcolor(white) gridcolor(180,255,170)   
+graph8.datelabel format(yyyy) 
+graph8.align(2, 2.5, 1.5)
+graph8.legend -inbox
+'show graph8
+
+graph graph9.merge fig13 fig14 fig15 fig16 
+graph9.legend font(16)
+graph9.axis(left) font(16)
+graph9.axis(right) font(16)
+graph9.axis(bottom) font(16)
+graph9.axis(top) font(16)
+graph9.axis ticksnone
+graph9.axis(right) ticksnone
+graph9.options gridauto 
+graph9.options fillcolor(white) backcolor(white) gridcolor(180,255,170)   
+graph9.datelabel format(yyyy) 
+graph9.align(2, 2.5, 1.5)
+graph9.legend -inbox
+'show graph9
+
+
+'   **************************************************************************************************************************************************
+
+'Additional graphs
+
+graph graph10.merge gdp gdpl inequal emp leo prod price prof emiss temp dam ener eff depl util ses por fin rate deb 
+graph10.legend font(24)
+graph10.axis(left) font(24)
+graph10.axis(right) font(24)
+graph10.axis(bottom) font(24)
+graph10.axis(top) font(24)
+graph10.axis ticksnone
+graph10.axis(right) ticksnone
+graph10.options gridauto 
+graph10.options fillcolor(white) backcolor(white) gridcolor(180,255,170)   
+graph10.datelabel format(yyyy) 
+graph10.align(5, 5, 6)
+graph10.legend -inbox
+'show graph10
+
+graph graph11.merge fig17 fig18 
+graph11.legend font(16)
+graph11.axis(left) font(16)
+graph11.axis(right) font(16)
+graph11.axis(bottom) font(16)
+graph11.axis(top) font(16)
+graph11.axis ticksnone
+graph11.axis(right) ticksnone
+graph11.options gridauto 
+graph11.options fillcolor(white) backcolor(white) gridcolor(180,255,170)   
+graph11.datelabel format(yyyy) 
+graph11.align(2, 2.5, 1.5)
+graph11.legend -inbox
+'show graph11
+
+smpl 2008 @last
