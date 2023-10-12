@@ -1,2 +1,2 @@
 # SFC-models-EViews
-SFC models developed using EViews
+A selection of (multi-area) SFC models developed using EViews
