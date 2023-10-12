@@ -9,7 +9,7 @@
 '  public. If you use it for publication purposes, please mention the source. 
 '
 '  Instructions: a) download this EViews program file; b) download the associated Excel file using the  
-'  link below; c) change the path after the "read" command (line 32); d) run the model.
+'  link below; c) change the path after the "read" command (line 29); d) run the model.
 '
 '  Link to dataset: https://www.dropbox.com/scl/fi/xfaindcblsyo9xxevubt3/data_ref.xls?rlkey=hj9y1244ixb708ikaqi842kkj&dl=0
 '
@@ -24,9 +24,6 @@
 wfcreate(wf = superecom74) a 1960 2100
 
 '  *****************************************************************************************************************************************************
-
-'Select saving type:
-series saving = 1     '1 = save charts and tables; 0 = do not save charts and tables 
 
 'Import observed series
 read(b15) "C:\Users\ ... \data_ref.xls" y_bil cons_bil inv_bil ny_bil v_bil tau_ob kappa_ob gov_bil p_100 lf_bil   
